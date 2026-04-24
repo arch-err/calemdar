@@ -104,27 +104,21 @@ var eventCmd = &cobra.Command{
 
 var eventNewCmd = &cobra.Command{
 	Use:   "new",
-	Short: "Create a new one-off event",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("event new")
-	},
+	Short: "Create a new one-off event (interactive)",
+	RunE:  runEventNew,
 }
 
 var eventListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List events in a range",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("event list")
-	},
+	RunE:  runEventList,
 }
 
 var eventShowCmd = &cobra.Command{
 	Use:   "show <path>",
 	Short: "Show one event",
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("event show")
-	},
+	RunE:  runEventShow,
 }
 
 var seriesCmd = &cobra.Command{
@@ -134,10 +128,8 @@ var seriesCmd = &cobra.Command{
 
 var seriesNewCmd = &cobra.Command{
 	Use:   "new",
-	Short: "Create a new recurring series",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("series new")
-	},
+	Short: "Create a new recurring series (interactive)",
+	RunE:  runSeriesNew,
 }
 
 var seriesListCmd = &cobra.Command{
@@ -222,9 +214,7 @@ var seriesExceptCmd = &cobra.Command{
 	Use:   "except <id-or-slug> <date>",
 	Short: "Add a date to a series' exceptions list",
 	Args:  cobra.ExactArgs(2),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("series except")
-	},
+	RunE:  runSeriesExcept,
 }
 
 var reactorCmd = &cobra.Command{
