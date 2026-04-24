@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"os"
 	"text/tabwriter"
-	"time"
 
-	"github.com/arch-err/calemdar/internal/expand"
 	"github.com/arch-err/calemdar/internal/model"
+	"github.com/arch-err/calemdar/internal/reactor"
+	"github.com/arch-err/calemdar/internal/reconcile"
 	"github.com/arch-err/calemdar/internal/series"
-	"github.com/arch-err/calemdar/internal/vault"
-	"github.com/arch-err/calemdar/internal/writer"
 	"github.com/spf13/cobra"
 )
 
@@ -49,68 +47,17 @@ func runExpand(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return fmt.Errorf("series %q not found", args[0])
 	}
-	return reconcileSeries(v, r)
+	rep, err := reconcile.Series(v, r)
+	if err != nil {
+		return err
+	}
+	printReport(r, rep)
+	return nil
 }
 
-// reconcileSeries expands r, writes planned events (respecting user-owned),
-// and sweeps orphaned future non-user-owned events. Past events are immutable.
-func reconcileSeries(v *vault.Vault, r *model.Root) error {
-	loc := model.Stockholm()
-	today := model.Today(loc)
-	end := today.AddDate(0, 12, 0)
-
-	events, err := expand.Expand(r, today, end, time.Now())
-	if err != nil {
-		return err
-	}
-
-	planned := make(map[string]bool, len(events))
-	for _, e := range events {
-		e.Path = v.EventPath(r.Calendar, e.Date, r.Slug)
-		planned[e.Path] = true
-	}
-
-	var created, updated, skipped int
-	for _, e := range events {
-		if existing, err := model.ParseEvent(e.Path); err == nil {
-			if existing.UserOwned {
-				skipped++
-				continue
-			}
-			updated++
-		} else {
-			created++
-		}
-		if err := writer.WriteEvent(e); err != nil {
-			return fmt.Errorf("write %s: %w", e.Path, err)
-		}
-	}
-
-	existing, err := series.LoadEventsForSeries(v, r)
-	if err != nil {
-		return err
-	}
-	var deleted int
-	for _, ex := range existing {
-		if planned[ex.Path] {
-			continue
-		}
-		if ex.UserOwned {
-			continue
-		}
-		exDate, err := model.ParseDate(ex.Date, loc)
-		if err != nil || exDate.Before(today) {
-			continue
-		}
-		if err := os.Remove(ex.Path); err != nil {
-			return fmt.Errorf("sweep %s: %w", ex.Path, err)
-		}
-		deleted++
-	}
-
+func printReport(r *model.Root, rep *reconcile.Report) {
 	fmt.Printf("series %s (%s): %d in plan — created %d, updated %d, skipped %d (user-owned), swept %d orphans\n",
-		r.Slug, r.ID, len(events), created, updated, skipped, deleted)
-	return nil
+		r.Slug, r.ID, rep.InPlan, rep.Created, rep.Updated, rep.Skipped, rep.Swept)
 }
 
 var extendCmd = &cobra.Command{
@@ -133,9 +80,11 @@ func runExtend(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	for _, r := range roots {
-		if err := reconcileSeries(v, r); err != nil {
+		rep, err := reconcile.Series(v, r)
+		if err != nil {
 			return err
 		}
+		printReport(r, rep)
 	}
 	return nil
 }
@@ -276,6 +225,32 @@ var seriesExceptCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return errNotImplemented("series except")
 	},
+}
+
+var reactorCmd = &cobra.Command{
+	Use:   "reactor",
+	Short: "Scan events/ for FC-authored recurring events and migrate to recurring/",
+	RunE:  runReactor,
+}
+
+func runReactor(cmd *cobra.Command, args []string) error {
+	v, err := resolveVault(cmd)
+	if err != nil {
+		return err
+	}
+	migrations, err := reactor.Run(v)
+	if err != nil {
+		return err
+	}
+	if len(migrations) == 0 {
+		fmt.Println("no FC-authored recurring events found")
+		return nil
+	}
+	for _, m := range migrations {
+		fmt.Printf("migrated: %s → %s\n", m.FromPath, m.ToPath)
+		printReport(m.Series, m.Report)
+	}
+	return nil
 }
 
 func init() {

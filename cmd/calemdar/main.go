@@ -24,6 +24,7 @@ func main() {
 	rootCmd.AddCommand(expandCmd)
 	rootCmd.AddCommand(extendCmd)
 	rootCmd.AddCommand(archiveCmd)
+	rootCmd.AddCommand(reactorCmd)
 	rootCmd.AddCommand(eventCmd)
 	rootCmd.AddCommand(seriesCmd)
 
