@@ -57,6 +57,18 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 		return nil, err
 	}
 
+	// Index existing occurrences by date. Uses series-id (not filename) so a
+	// renamed file still counts as "that date's slot is filled" — prevents
+	// duplicates when a user renames an expanded event in the UI.
+	existingForSeries, err := series.LoadEventsForSeries(v, r)
+	if err != nil {
+		return nil, err
+	}
+	byDate := make(map[string]*model.Event, len(existingForSeries))
+	for _, ex := range existingForSeries {
+		byDate[ex.Date] = ex
+	}
+
 	planned := make(map[string]bool, len(events))
 	for _, e := range events {
 		e.Path = v.EventPath(r.Calendar, e.Date, r.Slug)
@@ -68,22 +80,23 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 		eDate, _ := model.ParseDate(e.Date, loc)
 		isPast := eDate.Before(today)
 
-		existing, existErr := model.ParseEvent(e.Path)
-		if existErr == nil {
-			if existing.UserOwned {
+		if ex, filled := byDate[e.Date]; filled {
+			if ex.UserOwned {
 				rep.Skipped++
 				continue
 			}
-			// Past events, user-owned or not, are never rewritten. The
-			// assumption is that what happened, happened — don't clobber.
+			// Past events, user-owned or not, are never rewritten.
 			if isPast {
 				rep.Skipped++
 				continue
 			}
+			// Future non-user-owned slot exists. Overwrite in place — keep
+			// the existing path in case a rename moved it off the canonical
+			// naming (rare for non-user-owned, but be defensive).
+			e.Path = ex.Path
 			rep.Updated++
 		} else {
-			// No file at target path. For past events, also check archive/
-			// — don't un-archive something we already tucked away.
+			// No file with this series-id for this date.
 			if isPast && archivedExists(v, r.Calendar, e.Date, r.Slug) {
 				rep.Skipped++
 				continue
@@ -95,12 +108,16 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 		}
 	}
 
-	existing, err := series.LoadEventsForSeries(v, r)
-	if err != nil {
-		return rep, err
+	// Orphan sweep: future non-user-owned events whose date isn't in the
+	// plan. Matches by date (so renamed/off-canonical files still count as
+	// "this date's slot") — prevents accidental deletion of user-renamed
+	// events that happen to be non-user-owned.
+	plannedDates := make(map[string]bool, len(events))
+	for _, e := range events {
+		plannedDates[e.Date] = true
 	}
-	for _, ex := range existing {
-		if planned[ex.Path] || ex.UserOwned {
+	for _, ex := range existingForSeries {
+		if plannedDates[ex.Date] || ex.UserOwned {
 			continue
 		}
 		exDate, err := model.ParseDate(ex.Date, loc)
