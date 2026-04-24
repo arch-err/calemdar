@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/spf13/cobra"
 )
 
@@ -16,6 +17,8 @@ only flat single events and its drag-a-recurring-event footgun never fires.`,
 }
 
 func main() {
+	rootCmd.PersistentFlags().String("vault", "", "vault root path (or $"+vault.EnvVar+")")
+
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(reindexCmd)
 	rootCmd.AddCommand(expandCmd)
@@ -28,4 +31,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func resolveVault(cmd *cobra.Command) (*vault.Vault, error) {
+	override, _ := cmd.Flags().GetString("vault")
+	return vault.Resolve(override)
 }

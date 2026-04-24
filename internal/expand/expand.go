@@ -4,6 +4,7 @@ package expand
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/arch-err/calemdar/internal/model"
@@ -96,7 +97,7 @@ func Expand(r *model.Root, start, end, expandedAt time.Time) ([]*model.Event, er
 // buildEvent constructs a single expanded Event for root r at date d.
 // Path is left empty — the writer populates it based on vault location.
 func buildEvent(r *model.Root, d, expandedAt time.Time) *model.Event {
-	body := "[[" + r.Slug + "]]\n\n" + r.Body
+	body := "[[" + r.Slug + "]]\n\n" + strings.TrimLeft(r.Body, "\n")
 	return &model.Event{
 		Title:            r.Title,
 		Date:             model.FormatDate(d),
