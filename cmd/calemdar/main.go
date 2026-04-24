@@ -39,8 +39,8 @@ func main() {
 	rootCmd.AddCommand(seriesCmd)
 	rootCmd.AddCommand(configCmd)
 
+	// cobra prints "Error: ..." itself; we just need the non-zero exit.
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
