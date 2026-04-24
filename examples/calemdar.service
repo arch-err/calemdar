@@ -1,0 +1,17 @@
+[Unit]
+Description=calemdar — Obsidian recurring-event daemon
+Documentation=https://github.com/arch-err/calemdar
+After=default.target
+
+[Service]
+Type=simple
+# Go install default path. Change to wherever `go install` put the binary,
+# or to a locally-built ./bin/calemdar, or to /usr/local/bin/calemdar.
+ExecStart=%h/go/bin/calemdar serve
+Restart=on-failure
+RestartSec=3
+# Config is loaded from $XDG_CONFIG_HOME/calemdar/config.yaml
+# (defaults to ~/.config/calemdar/config.yaml). No env or args needed here.
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,32 @@
+# cale**md**ar config — copy to $XDG_CONFIG_HOME/calemdar/config.yaml
+# (typically ~/.config/calemdar/config.yaml)
+#
+# All fields are optional; missing keys fall back to the defaults shown here.
+# CLI --vault and $CALEMDAR_VAULT still override the vault key below.
+
+# Required for the daemon — absolute path to your Obsidian vault.
+vault: /home/you/path/to/vault
+
+# IANA timezone name. Controls "today" resolution and the nightly timer.
+timezone: Europe/Stockholm
+
+# When the nightly reconcile + archive pass runs (HH:MM, 24h, in `timezone`).
+nightly_at: "03:00"
+
+# How many months of events to keep materialised ahead of today.
+horizon_months: 12
+
+# Events older than (today - this many months) are moved to archive/.
+archive_cutoff_months: 6
+
+# How long to coalesce rapid-fire filesystem events per path, in ms.
+debounce_ms: 500
+
+# Calendar subfolders. One Full Calendar source per name, one color each.
+calendars:
+  - health
+  - tech
+  - work
+  - life
+  - friends-family
+  - special

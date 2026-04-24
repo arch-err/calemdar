@@ -26,16 +26,38 @@ func FormatDate(t time.Time) string {
 	return t.Format(DateLayout)
 }
 
-// Stockholm is the default timezone for v1.
-func Stockholm() *time.Location {
-	loc, err := time.LoadLocation("Europe/Stockholm")
-	if err != nil {
-		// Fall back to UTC if tzdata is missing; date math is tz-insensitive so
-		// this only affects "today" resolution at the local-midnight boundary.
-		return time.UTC
+// defaultLocation is the tz used before SetTimezone is called. Matches
+// config's default so code that runs before config.LoadAndApply (including
+// all unit tests) sees a reasonable value.
+var defaultLocation = func() *time.Location {
+	if loc, err := time.LoadLocation("Europe/Stockholm"); err == nil {
+		return loc
 	}
-	return loc
+	return time.UTC
+}()
+
+// Location returns the configured timezone. Runtime-settable via SetTimezone.
+func Location() *time.Location { return defaultLocation }
+
+// SetTimezone updates the package-global timezone. Call once at startup
+// after config.LoadAndApply.
+func SetTimezone(loc *time.Location) {
+	if loc != nil {
+		defaultLocation = loc
+	}
 }
+
+// ResolvedLocation loads a timezone by IANA name, falling back to UTC on
+// failure. Returns the loaded location and nil on success.
+func ResolvedLocation(name string) (*time.Location, error) {
+	return time.LoadLocation(name)
+}
+
+// Stockholm is kept as an alias for backward compatibility with v1 callers.
+// Prefer Location() in new code.
+//
+// Deprecated: use Location().
+func Stockholm() *time.Location { return Location() }
 
 // Today returns today's date at 00:00 in the given location.
 func Today(loc *time.Location) time.Time {

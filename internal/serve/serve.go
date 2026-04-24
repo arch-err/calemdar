@@ -4,9 +4,11 @@ package serve
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
+	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/store"
 	"github.com/arch-err/calemdar/internal/vault"
@@ -22,7 +24,8 @@ type Options struct {
 
 // Run starts the daemon. Returns when ctx is cancelled.
 func Run(ctx context.Context, opts Options) error {
-	w, err := watch.Start(opts.Vault)
+	debounce := time.Duration(config.Active.DebounceMs) * time.Millisecond
+	w, err := watch.StartWithDebounce(opts.Vault, debounce)
 	if err != nil {
 		return err
 	}
@@ -60,12 +63,17 @@ func Run(ctx context.Context, opts Options) error {
 	}
 }
 
-// runNightlyLoop fires runNightly at 03:00 local Stockholm time, every day,
-// until ctx is cancelled.
+// runNightlyLoop fires runNightly at the configured nightly_at in the
+// configured timezone, every day, until ctx is cancelled.
 func runNightlyLoop(ctx context.Context, opts Options) {
-	loc := model.Stockholm()
+	loc := model.Location()
+	hh, mm, err := parseHHMM(config.Active.NightlyAt)
+	if err != nil {
+		log.Printf("serve: bad nightly_at %q, skipping nightly: %v", config.Active.NightlyAt, err)
+		return
+	}
 	for {
-		next := nextNightly(loc, time.Now())
+		next := nextNightly(loc, time.Now(), hh, mm)
 		log.Printf("serve: next nightly run at %s", next.Format(time.RFC3339))
 		timer := time.NewTimer(time.Until(next))
 		select {
@@ -78,12 +86,20 @@ func runNightlyLoop(ctx context.Context, opts Options) {
 	}
 }
 
-// nextNightly returns the next 03:00 in loc strictly after now.
-func nextNightly(loc *time.Location, now time.Time) time.Time {
+// nextNightly returns the next HH:MM in loc strictly after now.
+func nextNightly(loc *time.Location, now time.Time, hh, mm int) time.Time {
 	now = now.In(loc)
-	t := time.Date(now.Year(), now.Month(), now.Day(), 3, 0, 0, 0, loc)
+	t := time.Date(now.Year(), now.Month(), now.Day(), hh, mm, 0, 0, loc)
 	if !t.After(now) {
 		t = t.AddDate(0, 0, 1)
 	}
 	return t
+}
+
+func parseHHMM(s string) (int, int, error) {
+	t, err := time.Parse("15:04", s)
+	if err != nil {
+		return 0, 0, fmt.Errorf("not HH:MM: %w", err)
+	}
+	return t.Hour(), t.Minute(), nil
 }

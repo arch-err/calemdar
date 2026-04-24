@@ -11,14 +11,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/arch-err/calemdar/internal/writer"
 )
-
-// DefaultCutoffMonths is how many months back we archive. Anything older
-// than today minus this is moved.
-const DefaultCutoffMonths = 6
 
 // Report summarises an archive run.
 type Report struct {
@@ -26,10 +23,11 @@ type Report struct {
 	Paths []string // relative to vault root
 }
 
-// Run moves old events to archive/. Today is in Europe/Stockholm.
+// Run moves old events to archive/. Cutoff is configured via
+// config.Active.ArchiveCutoffMonths, today in the configured timezone.
 func Run(v *vault.Vault) (*Report, error) {
-	loc := model.Stockholm()
-	cutoff := model.Today(loc).AddDate(0, -DefaultCutoffMonths, 0)
+	loc := model.Location()
+	cutoff := model.Today(loc).AddDate(0, -config.Active.ArchiveCutoffMonths, 0)
 	return RunWithCutoff(v, cutoff)
 }
 

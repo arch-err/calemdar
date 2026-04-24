@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/expand"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/series"
@@ -23,12 +24,12 @@ type Report struct {
 	Swept   int // orphan future events deleted
 }
 
-// Series reconciles r against disk over a 12-month window from today
-// (Europe/Stockholm). Past events are immutable.
+// Series reconciles r against disk over the configured horizon window
+// starting today (in the configured timezone). Past events are immutable.
 func Series(v *vault.Vault, r *model.Root) (*Report, error) {
-	loc := model.Stockholm()
+	loc := model.Location()
 	today := model.Today(loc)
-	end := today.AddDate(0, 12, 0)
+	end := today.AddDate(0, config.Active.HorizonMonths, 0)
 
 	events, err := expand.Expand(r, today, end, time.Now())
 	if err != nil {

@@ -118,7 +118,7 @@ func runEventList(cmd *cobra.Command, args []string) error {
 	}
 	rangeFlag, _ := cmd.Flags().GetString("range")
 
-	loc := model.Stockholm()
+	loc := model.Location()
 	today := model.Today(loc)
 	var from, to time.Time
 	switch rangeFlag {

@@ -34,12 +34,30 @@ go install github.com/arch-err/calemdar/cmd/calemdar@latest
 # or clone + `just build` → ./bin/calemdar
 ```
 
-Point it at an Obsidian vault via `--vault <path>` or `$CALEMDAR_VAULT`.
+## Configuration
+
+cale**md**ar reads a YAML config from `$XDG_CONFIG_HOME/calemdar/config.yaml`
+(defaults to `~/.config/calemdar/config.yaml`). See
+[examples/config.yaml](./examples/config.yaml) for every available key with
+comments.
+
+Minimum needed:
+
+```yaml
+vault: /home/you/path/to/vault
+```
+
+Precedence, highest wins: `--vault` flag → `$CALEMDAR_VAULT` env → config
+`vault:` key → error. Use `calemdar config path` to print the lookup path
+and `calemdar config show` to dump the active (post-merge) values.
 
 ## Quickstart
 
 ```sh
-export CALEMDAR_VAULT="$HOME/path/to/vault"
+# one-time: create the config
+mkdir -p ~/.config/calemdar
+cp examples/config.yaml ~/.config/calemdar/config.yaml
+$EDITOR ~/.config/calemdar/config.yaml    # at minimum, set vault:
 
 # create a recurring series interactively
 calemdar series new
@@ -47,6 +65,19 @@ calemdar series new
 # run the daemon — watches recurring/ and events/, reacts live
 calemdar serve
 ```
+
+## Running as a systemd user service
+
+Sample unit: [examples/calemdar.service](./examples/calemdar.service).
+
+```sh
+cp examples/calemdar.service ~/.config/systemd/user/calemdar.service
+systemctl --user daemon-reload
+systemctl --user enable --now calemdar.service
+journalctl --user -u calemdar -f    # watch it work
+```
+
+All tuning lives in `config.yaml` — the unit itself takes no env or flags.
 
 With `serve` running, in Obsidian:
 
