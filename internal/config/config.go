@@ -17,8 +17,10 @@ import (
 )
 
 // Config is the on-disk shape. All fields optional; zero values → defaults.
+// Vault is intentionally NOT omitempty — when empty, the stub and `show`
+// both render `vault: ""` so the user can't miss that it's unset.
 type Config struct {
-	Vault               string   `yaml:"vault,omitempty"`
+	Vault               string   `yaml:"vault"`
 	Timezone            string   `yaml:"timezone,omitempty"`
 	NightlyAt           string   `yaml:"nightly_at,omitempty"`     // "HH:MM" 24h
 	HorizonMonths       int      `yaml:"horizon_months,omitempty"` // default 12
