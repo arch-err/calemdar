@@ -79,16 +79,19 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	if err := os.WriteFile(path, stub, 0o644); err != nil {
 		return err
 	}
-	fmt.Printf("wrote %s\nnext: `calemdar config edit` to set vault and tweak\n", path)
-	return nil
+	fmt.Printf("wrote %s\n", path)
+
+	// If $EDITOR is available, drop the user straight into it so the newly-
+	// created file is immediately editable. On $EDITOR-unset we just report
+	// the write and exit — still a success, just no follow-up edit.
+	if os.Getenv("EDITOR") == "" {
+		fmt.Println("next: set $EDITOR and run `calemdar config edit` to tweak")
+		return nil
+	}
+	return openEditorAndValidate(path)
 }
 
 func runConfigEdit(cmd *cobra.Command, args []string) error {
-	editor := os.Getenv("EDITOR")
-	if editor == "" {
-		return fmt.Errorf("$EDITOR not set")
-	}
-
 	path, err := config.Path()
 	if err != nil {
 		return err
@@ -106,8 +109,17 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 		}
 		fmt.Fprintf(os.Stderr, "created stub at %s\n", path)
 	}
+	return openEditorAndValidate(path)
+}
 
-	// Support "EDITOR=code --wait" or "EDITOR=emacsclient -nw" etc.
+// openEditorAndValidate runs $EDITOR on path, then reloads + validates the
+// config. Returns an error on validation failure; editor non-zero exit is
+// logged but tolerated (user may have saved before quitting).
+func openEditorAndValidate(path string) error {
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		return fmt.Errorf("$EDITOR not set")
+	}
 	parts := strings.Fields(editor)
 	if len(parts) == 0 {
 		return fmt.Errorf("$EDITOR empty after split")
@@ -118,12 +130,9 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 	c.Stdout = os.Stdout
 	c.Stderr = os.Stderr
 	if err := c.Run(); err != nil {
-		// Editor exited non-zero — validate anyway; the user may have saved
-		// before quitting.
 		fmt.Fprintf(os.Stderr, "editor exited: %v (validating file anyway)\n", err)
 	}
 
-	// Validate the post-edit state.
 	fresh, err := config.Load()
 	if err != nil {
 		return fmt.Errorf("invalid after edit:\n  %w\n\nfix the file and re-run `calemdar config edit`", err)
