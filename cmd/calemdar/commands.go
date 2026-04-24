@@ -5,6 +5,7 @@ import (
 	"os"
 	"text/tabwriter"
 
+	"github.com/arch-err/calemdar/internal/archive"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/reactor"
 	"github.com/arch-err/calemdar/internal/reconcile"
@@ -92,9 +93,23 @@ func runExtend(cmd *cobra.Command, args []string) error {
 var archiveCmd = &cobra.Command{
 	Use:   "archive",
 	Short: "Archive events older than 6 months",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("archive")
-	},
+	RunE:  runArchive,
+}
+
+func runArchive(cmd *cobra.Command, args []string) error {
+	v, err := resolveVault(cmd)
+	if err != nil {
+		return err
+	}
+	rep, err := archive.Run(v)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("archived %d events\n", rep.Moved)
+	for _, p := range rep.Paths {
+		fmt.Printf("  %s\n", p)
+	}
+	return nil
 }
 
 var eventCmd = &cobra.Command{
