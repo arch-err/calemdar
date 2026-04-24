@@ -104,6 +104,9 @@ With `serve` running, in Obsidian:
 | `calemdar event new`                     | Interactive one-off event |
 | `calemdar event list [--range=...]`      | `today` / `week` / `month` / `all` |
 | `calemdar event show <path>`             | Event detail |
+| `calemdar config path`                   | Print the config file lookup path |
+| `calemdar config show`                   | Print the active (post-merge) config |
+| `calemdar config edit`                   | Open config in `$EDITOR`, validate on save |
 
 ## Vault layout
 

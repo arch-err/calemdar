@@ -18,6 +18,9 @@ per-occurrence markdown files, so Obsidian's Full Calendar plugin sees
 only flat single events and its drag-a-recurring-event footgun never fires.`,
 	// Loads config once, before any subcommand runs.
 	PersistentPreRunE: loadConfig,
+	// Don't print usage on runtime errors; cobra only shows Usage on flag
+	// parse errors, which is what that message is for.
+	SilenceUsage: true,
 }
 
 func main() {
@@ -42,15 +45,28 @@ func main() {
 // loadConfig runs before every subcommand. Loads + validates the config
 // file (optional, defaults used on absence), then applies runtime-wide
 // settings (timezone, calendar list).
+//
+// For `config` subcommands we tolerate load errors — otherwise a broken
+// config file would lock the user out of fixing it via `calemdar config edit`.
 func loadConfig(cmd *cobra.Command, args []string) error {
-	if err := config.LoadAndApply(); err != nil {
+	err := config.LoadAndApply()
+	if err != nil && !isConfigSubcommand(cmd) {
 		return err
 	}
-	if loc, err := model.ResolvedLocation(config.Active.Timezone); err == nil {
+	if loc, lerr := model.ResolvedLocation(config.Active.Timezone); lerr == nil {
 		model.SetTimezone(loc)
 	}
 	model.SetCalendars(config.Active.Calendars)
 	return nil
+}
+
+func isConfigSubcommand(cmd *cobra.Command) bool {
+	for c := cmd; c != nil; c = c.Parent() {
+		if c.Name() == "config" {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveVault returns the active vault. Precedence:
