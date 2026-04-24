@@ -1,0 +1,20 @@
+# binaries
+/calemdar
+/bin/
+
+# go build cache
+/vendor/
+
+# sqlite state (runtime, not checked in)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# editor
+.idea/
+.vscode/
+*.swp
+
+# os
+.DS_Store
