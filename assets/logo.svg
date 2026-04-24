@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="calemdar logo">
+  <!-- page -->
+  <rect x="28" y="40" width="144" height="140" rx="10" stroke-width="6"/>
+
+  <!-- binder rings -->
+  <line x1="66" y1="24" x2="66" y2="56" stroke-width="6"/>
+  <line x1="134" y1="24" x2="134" y2="56" stroke-width="6"/>
+
+  <!-- header divider -->
+  <line x1="28" y1="78" x2="172" y2="78" stroke-width="6"/>
+
+  <!-- grid: 3 cols x 2 rows below header -->
+  <g stroke-width="3" opacity="0.35">
+    <line x1="76" y1="78" x2="76" y2="180"/>
+    <line x1="124" y1="78" x2="124" y2="180"/>
+    <line x1="28" y1="129" x2="172" y2="129"/>
+  </g>
+
+  <!-- highlighted cell backing for "md" -->
+  <rect x="78" y="80" width="92" height="47" rx="3" stroke-width="4"/>
+
+  <!-- "m" glyph -->
+  <path d="M 90 119 L 90 92 Q 90 86 96 86 Q 102 86 102 92 L 102 119 M 102 92 Q 102 86 108 86 Q 114 86 114 92 L 114 119" stroke-width="5"/>
+
+  <!-- "d" glyph: circle bowl + ascender -->
+  <circle cx="142" cy="108" r="11" stroke-width="5"/>
+  <line x1="153" y1="86" x2="153" y2="119" stroke-width="5"/>
+</svg>
