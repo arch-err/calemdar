@@ -24,13 +24,25 @@ type Config struct {
 	Vault string `yaml:"vault"`
 	// BasePath is the subfolder (relative to Vault) under which `recurring/`,
 	// `events/`, and `archive/` live. Empty means "at vault root".
-	BasePath            string   `yaml:"base_path"`
-	Timezone            string   `yaml:"timezone,omitempty"`
-	NightlyAt           string   `yaml:"nightly_at,omitempty"`     // "HH:MM" 24h
-	HorizonMonths       int      `yaml:"horizon_months,omitempty"` // default 12
-	ArchiveCutoffMonths int      `yaml:"archive_cutoff_months,omitempty"`
-	DebounceMs          int      `yaml:"debounce_ms,omitempty"`
-	Calendars           []string `yaml:"calendars,omitempty"`
+	BasePath            string        `yaml:"base_path"`
+	Timezone            string        `yaml:"timezone,omitempty"`
+	NightlyAt           string        `yaml:"nightly_at,omitempty"`     // "HH:MM" 24h
+	HorizonMonths       int           `yaml:"horizon_months,omitempty"` // default 12
+	ArchiveCutoffMonths int           `yaml:"archive_cutoff_months,omitempty"`
+	DebounceMs          int           `yaml:"debounce_ms,omitempty"`
+	Calendars           []string      `yaml:"calendars,omitempty"`
+	Notifications       Notifications `yaml:"notifications"`
+}
+
+// Notifications controls upcoming-event push notifications. When Enabled,
+// the serve daemon spawns a ticker goroutine that POSTs to a ntfy topic
+// whenever an upcoming event crosses one of the lead-time windows.
+type Notifications struct {
+	Enabled     bool     `yaml:"enabled"`
+	NtfyURL     string   `yaml:"ntfy_url"`     // base, e.g. "https://ntfy.sh"
+	NtfyTopic   string   `yaml:"ntfy_topic"`   // topic name
+	LeadMinutes []int    `yaml:"lead_minutes"` // default [5, 60]
+	Calendars   []string `yaml:"calendars"`    // empty means all
 }
 
 // Defaults returns a Config with v1's built-in defaults filled in.
@@ -43,6 +55,10 @@ func Defaults() Config {
 		ArchiveCutoffMonths: 6,
 		DebounceMs:          500,
 		Calendars:           []string{"health", "tech", "work", "life", "friends-family", "special"},
+		Notifications: Notifications{
+			Enabled:     false,
+			LeadMinutes: []int{5, 60},
+		},
 	}
 }
 
@@ -101,6 +117,19 @@ func (c Config) Validate() error {
 	if len(c.Calendars) == 0 {
 		return fmt.Errorf("config: calendars list is empty")
 	}
+	if c.Notifications.Enabled {
+		if strings.TrimSpace(c.Notifications.NtfyURL) == "" {
+			return fmt.Errorf("config: notifications.ntfy_url required when notifications.enabled")
+		}
+		if strings.TrimSpace(c.Notifications.NtfyTopic) == "" {
+			return fmt.Errorf("config: notifications.ntfy_topic required when notifications.enabled")
+		}
+	}
+	for _, m := range c.Notifications.LeadMinutes {
+		if m <= 0 {
+			return fmt.Errorf("config: notifications.lead_minutes values must be positive (got %d)", m)
+		}
+	}
 	return nil
 }
 
@@ -152,6 +181,30 @@ func merge(base, file Config) Config {
 	}
 	if file.DebounceMs != 0 {
 		base.DebounceMs = file.DebounceMs
+	}
+	if len(file.Calendars) > 0 {
+		base.Calendars = file.Calendars
+	}
+	base.Notifications = mergeNotifications(base.Notifications, file.Notifications)
+	return base
+}
+
+// mergeNotifications overlays non-zero fields of file onto base. Enabled is a
+// bool so any file value wins (defaults to false, explicit true enables).
+func mergeNotifications(base, file Notifications) Notifications {
+	// Enabled: file always wins since zero value (false) is also the default.
+	// A user setting enabled: false is equivalent to leaving it out.
+	if file.Enabled {
+		base.Enabled = true
+	}
+	if file.NtfyURL != "" {
+		base.NtfyURL = file.NtfyURL
+	}
+	if file.NtfyTopic != "" {
+		base.NtfyTopic = file.NtfyTopic
+	}
+	if len(file.LeadMinutes) > 0 {
+		base.LeadMinutes = file.LeadMinutes
 	}
 	if len(file.Calendars) > 0 {
 		base.Calendars = file.Calendars

@@ -10,6 +10,7 @@ import (
 
 	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/model"
+	"github.com/arch-err/calemdar/internal/notify"
 	"github.com/arch-err/calemdar/internal/store"
 	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/arch-err/calemdar/internal/watch"
@@ -53,6 +54,13 @@ func Run(ctx context.Context, opts Options) error {
 
 	// Nightly timer: extend horizon + archive.
 	go runNightlyLoop(ctx, opts)
+
+	// Optional ntfy push notifications for upcoming events.
+	if config.Active.Notifications.Enabled {
+		n := notify.New(opts.Store, config.Active.Notifications)
+		go n.Run(ctx)
+		log.Printf("serve: notifier started — topic %s", config.Active.Notifications.NtfyTopic)
+	}
 
 	log.Printf("serve: watching %s", opts.Vault.Root)
 

@@ -35,3 +35,17 @@ calendars:
   - life
   - friends-family
   - special
+
+# Upcoming-event push notifications via ntfy. When enabled, the daemon
+# POSTs to <ntfy_url>/<ntfy_topic> for every event whose start time falls
+# inside one of the `lead_minutes` windows.
+notifications:
+  enabled: false
+  # Base URL for the ntfy server. Public server or self-hosted.
+  # ntfy_url: https://ntfy.sh
+  # Topic name. Keep it unguessable if the server is public.
+  # ntfy_topic: my-private-calemdar-topic
+  # Minutes before an event to push. Defaults to [5, 60].
+  # lead_minutes: [5, 60]
+  # Only notify for events in these calendars. Empty = all calendars.
+  # calendars: []

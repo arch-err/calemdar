@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/vault"
@@ -235,6 +237,80 @@ func (s *Store) ListOccurrencesInRange(from, to string) ([]*model.Event, error) 
 		e.UserOwned = userOwned != 0
 		e.SeriesExpandedAt = expandedAt.String
 		e.Type = "single"
+		out = append(out, &e)
+	}
+	return out, rows.Err()
+}
+
+// ListUpcoming returns non-all-day occurrences whose "date T start_time"
+// falls within [from, to]. calendars filters to the given set; empty means
+// all. Timestamps are parsed in model.Location() (the configured timezone).
+//
+// Limitation (by design): all-day events are skipped — there's no obvious
+// trigger-time for them, and the notify layer cares about "about to start"
+// windows. If all-day notifications are wanted later, they belong to a
+// separate query with its own lead-time semantics.
+func (s *Store) ListUpcoming(from, to time.Time, calendars []string) ([]*model.Event, error) {
+	// Coarse pre-filter on date, then fine-filter in-Go by parsing start_time.
+	// SQLite's lexicographic comparison on YYYY-MM-DD is correct; we widen by
+	// a day on each side to cover events whose local time straddles midnight
+	// when `from` / `to` themselves straddle midnight.
+	fromDate := from.AddDate(0, 0, -1).Format("2006-01-02")
+	toDate := to.AddDate(0, 0, 1).Format("2006-01-02")
+
+	query := `SELECT path, series_id, calendar, date, title,
+		start_time, end_time, all_day, user_owned, expanded_at
+		FROM occurrences
+		WHERE date >= ? AND date <= ? AND all_day = 0`
+	args := []any{fromDate, toDate}
+
+	if len(calendars) > 0 {
+		placeholders := strings.Repeat("?,", len(calendars))
+		placeholders = placeholders[:len(placeholders)-1]
+		query += " AND calendar IN (" + placeholders + ")"
+		for _, c := range calendars {
+			args = append(args, c)
+		}
+	}
+	query += " ORDER BY date, start_time"
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	loc := model.Location()
+	var out []*model.Event
+	for rows.Next() {
+		var e model.Event
+		var seriesID, startTime, endTime, expandedAt sql.NullString
+		var calendar string
+		var allDay, userOwned int
+		if err := rows.Scan(&e.Path, &seriesID, &calendar, &e.Date, &e.Title,
+			&startTime, &endTime, &allDay, &userOwned, &expandedAt); err != nil {
+			return nil, err
+		}
+		e.SeriesID = seriesID.String
+		e.StartTime = startTime.String
+		e.EndTime = endTime.String
+		e.AllDay = allDay != 0
+		e.UserOwned = userOwned != 0
+		e.SeriesExpandedAt = expandedAt.String
+		e.Type = "single"
+
+		// Skip rows with no start_time — nothing to trigger on.
+		if e.StartTime == "" {
+			continue
+		}
+		ts, err := time.ParseInLocation("2006-01-02 15:04", e.Date+" "+e.StartTime, loc)
+		if err != nil {
+			// Malformed row — skip silently. Reindex will flag it elsewhere.
+			continue
+		}
+		if ts.Before(from) || ts.After(to) {
+			continue
+		}
 		out = append(out, &e)
 	}
 	return out, rows.Err()
