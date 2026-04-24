@@ -10,6 +10,7 @@ import (
 	"github.com/arch-err/calemdar/internal/reactor"
 	"github.com/arch-err/calemdar/internal/reconcile"
 	"github.com/arch-err/calemdar/internal/series"
+	"github.com/arch-err/calemdar/internal/store"
 	"github.com/spf13/cobra"
 )
 
@@ -24,9 +25,25 @@ var serveCmd = &cobra.Command{
 var reindexCmd = &cobra.Command{
 	Use:   "reindex",
 	Short: "Rebuild SQLite cache from disk",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("reindex")
-	},
+	RunE:  runReindex,
+}
+
+func runReindex(cmd *cobra.Command, args []string) error {
+	v, err := resolveVault(cmd)
+	if err != nil {
+		return err
+	}
+	s, err := store.Open(v)
+	if err != nil {
+		return err
+	}
+	defer s.Close()
+	rep, err := s.Reindex(v)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("reindexed: %d series, %d occurrences\n", rep.Series, rep.Occurrences)
+	return nil
 }
 
 var expandCmd = &cobra.Command{
