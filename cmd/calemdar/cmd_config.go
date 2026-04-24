@@ -35,6 +35,12 @@ var configShowCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Print the active (post-merge) configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		path, _ := config.Path()
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			fmt.Printf("# no config file at %s — showing defaults only\n", path)
+		} else {
+			fmt.Printf("# active config (defaults merged with %s)\n", path)
+		}
 		enc := yaml.NewEncoder(os.Stdout)
 		enc.SetIndent(2)
 		defer enc.Close()
@@ -47,12 +53,6 @@ var configEditCmd = &cobra.Command{
 	Short: "Open the config file in $EDITOR; validate on save",
 	RunE:  runConfigEdit,
 }
-
-const configStub = `# calemdar config — see examples/config.yaml in the repo for every key.
-# At minimum, set vault: to the absolute path of your Obsidian vault.
-
-vault: ""
-`
 
 func runConfigEdit(cmd *cobra.Command, args []string) error {
 	editor := os.Getenv("EDITOR")
@@ -68,7 +68,11 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("mkdir config dir: %w", err)
 	}
 	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
-		if err := os.WriteFile(path, []byte(configStub), 0o644); err != nil {
+		stub, err := buildStub()
+		if err != nil {
+			return err
+		}
+		if err := os.WriteFile(path, stub, 0o644); err != nil {
 			return fmt.Errorf("write stub: %w", err)
 		}
 		fmt.Fprintf(os.Stderr, "created stub at %s\n", path)
@@ -99,6 +103,32 @@ func runConfigEdit(cmd *cobra.Command, args []string) error {
 	fmt.Println("config ok.")
 	return nil
 }
+
+// buildStub materialises config.Defaults() as a YAML blob with a leading
+// header. Ensures the first `config edit` shows the same view as
+// `config show` rather than a surprising blank file.
+func buildStub() ([]byte, error) {
+	var body strings.Builder
+	body.WriteString("# calemdar config — edit freely. Validation runs on save.\n")
+	body.WriteString("# See examples/config.yaml in the repo for key-by-key docs.\n")
+	body.WriteString("#\n")
+	body.WriteString("# vault is REQUIRED for the daemon. Set it to your Obsidian vault path.\n\n")
+
+	enc := yaml.NewEncoder(&yamlBuffer{s: &body})
+	enc.SetIndent(2)
+	if err := enc.Encode(config.Defaults()); err != nil {
+		return nil, err
+	}
+	if err := enc.Close(); err != nil {
+		return nil, err
+	}
+	return []byte(body.String()), nil
+}
+
+// yamlBuffer adapts a strings.Builder to the io.Writer the yaml encoder wants.
+type yamlBuffer struct{ s *strings.Builder }
+
+func (b *yamlBuffer) Write(p []byte) (int, error) { return b.s.Write(p) }
 
 func init() {
 	configCmd.AddCommand(configPathCmd, configShowCmd, configEditCmd)
