@@ -47,8 +47,8 @@ func yellow(s string) string  { return wrap(ansiYellow, s) }
 func magenta(s string) string { return wrap(ansiMagenta, s) }
 func dim(s string) string     { return wrap(ansiDim, s) }
 
-// appName renders "calemdar" with the "md" dimmed to hint at the visual
-// wordmark "cale**md**ar" without using asterisks.
+// appName renders "calemdar" with the "md" in cyan — matches the section
+// header color so the wordmark pops against the regular text.
 func appName() string {
-	return "cale" + gray("md") + "ar"
+	return "cale" + cyan("md") + "ar"
 }
