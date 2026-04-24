@@ -30,6 +30,7 @@ func main() {
 	rootCmd.PersistentFlags().String("vault", "", "vault root path (overrides config + env)")
 
 	rootCmd.AddCommand(serveCmd)
+	rootCmd.AddCommand(setupCmd)
 	rootCmd.AddCommand(reindexCmd)
 	rootCmd.AddCommand(expandCmd)
 	rootCmd.AddCommand(extendCmd)
@@ -77,17 +78,23 @@ func isConfigSubcommand(cmd *cobra.Command) bool {
 //  2. $CALEMDAR_VAULT
 //  3. config.Active.Vault
 func resolveVault(cmd *cobra.Command) (*vault.Vault, error) {
+	var path string
 	if override, _ := cmd.Flags().GetString("vault"); override != "" {
-		return vault.Resolve(override)
+		path = override
+	} else if env := os.Getenv(vault.EnvVar); env != "" {
+		path = env
+	} else if config.Active.Vault != "" {
+		path = config.Active.Vault
+	} else {
+		return nil, fmt.Errorf("vault not configured: set in %s, $%s, or --vault flag",
+			configPathOrLiteral(), vault.EnvVar)
 	}
-	if env := os.Getenv(vault.EnvVar); env != "" {
-		return vault.Resolve(env)
+	v, err := vault.Resolve(path)
+	if err != nil {
+		return nil, err
 	}
-	if config.Active.Vault != "" {
-		return vault.Resolve(config.Active.Vault)
-	}
-	return nil, fmt.Errorf("vault not configured: set in %s, $%s, or --vault flag",
-		configPathOrLiteral(), vault.EnvVar)
+	v.BasePath = config.Active.BasePath
+	return v, nil
 }
 
 func configPathOrLiteral() string {

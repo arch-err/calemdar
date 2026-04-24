@@ -4,8 +4,13 @@
 # All fields are optional; missing keys fall back to the defaults shown here.
 # CLI --vault and $CALEMDAR_VAULT still override the vault key below.
 
-# Required for the daemon — absolute path to your Obsidian vault.
+# Required for the daemon — path to your Obsidian vault. ~/ is expanded.
 vault: /home/you/path/to/vault
+
+# Optional subfolder (relative to vault) to house the calendar tree.
+# Empty = at vault root. Useful if your vault already has a structure
+# and you want calendar data tucked away, e.g. "02 - Personal/Calendar".
+base_path: ""
 
 # IANA timezone name. Controls "today" resolution and the nightly timer.
 timezone: Europe/Stockholm

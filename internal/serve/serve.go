@@ -24,6 +24,15 @@ type Options struct {
 
 // Run starts the daemon. Returns when ctx is cancelled.
 func Run(ctx context.Context, opts Options) error {
+	// Make sure the vault tree exists before the watcher tries to attach.
+	if rep, err := vault.Scaffold(opts.Vault, config.Active.Calendars); err != nil {
+		return err
+	} else if len(rep.Created) > 0 {
+		for _, p := range rep.Created {
+			log.Printf("serve: created %s", p)
+		}
+	}
+
 	debounce := time.Duration(config.Active.DebounceMs) * time.Millisecond
 	w, err := watch.StartWithDebounce(opts.Vault, debounce)
 	if err != nil {

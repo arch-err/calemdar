@@ -11,16 +11,20 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
 
 // Config is the on-disk shape. All fields optional; zero values → defaults.
-// Vault is intentionally NOT omitempty — when empty, the stub and `show`
-// both render `vault: ""` so the user can't miss that it's unset.
+// Vault and BasePath are intentionally NOT omitempty — the stub and `show`
+// both render them even when empty so the user can't miss them.
 type Config struct {
-	Vault               string   `yaml:"vault"`
+	Vault string `yaml:"vault"`
+	// BasePath is the subfolder (relative to Vault) under which `recurring/`,
+	// `events/`, and `archive/` live. Empty means "at vault root".
+	BasePath            string   `yaml:"base_path"`
 	Timezone            string   `yaml:"timezone,omitempty"`
 	NightlyAt           string   `yaml:"nightly_at,omitempty"`     // "HH:MM" 24h
 	HorizonMonths       int      `yaml:"horizon_months,omitempty"` // default 12
@@ -71,9 +75,14 @@ func LoadAndApply() error {
 	return nil
 }
 
-// Validate checks fields for sane values. Called by LoadAndApply and can be
+// Validate checks fields for sane values. BasePath is checked for
+// traversal attempts (../) but not for existence — the vault or scaffold
+// step creates it. Called by LoadAndApply and can be
 // called by callers wanting a pre-flight check.
 func (c Config) Validate() error {
+	if strings.Contains(c.BasePath, "..") {
+		return fmt.Errorf("config: base_path %q contains .. — must stay inside the vault", c.BasePath)
+	}
 	if _, err := time.LoadLocation(c.Timezone); err != nil {
 		return fmt.Errorf("config: unknown timezone %q: %w", c.Timezone, err)
 	}
@@ -125,6 +134,9 @@ func Load() (Config, error) {
 func merge(base, file Config) Config {
 	if file.Vault != "" {
 		base.Vault = file.Vault
+	}
+	if file.BasePath != "" {
+		base.BasePath = file.BasePath
 	}
 	if file.Timezone != "" {
 		base.Timezone = file.Timezone

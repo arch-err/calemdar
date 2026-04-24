@@ -9,7 +9,8 @@ import (
 )
 
 type Vault struct {
-	Root string
+	Root     string
+	BasePath string // subfolder inside Root; "" means at root
 }
 
 // EnvVar is the environment variable holding the vault path.
@@ -47,9 +48,12 @@ func Resolve(override string) (*Vault, error) {
 	return &Vault{Root: abs}, nil
 }
 
-func (v *Vault) RecurringDir() string { return filepath.Join(v.Root, "recurring") }
-func (v *Vault) EventsDir() string    { return filepath.Join(v.Root, "events") }
-func (v *Vault) ArchiveDir() string   { return filepath.Join(v.Root, "archive") }
+// BaseDir is the directory under which recurring/, events/, archive/ live.
+// Equal to Root when BasePath is empty.
+func (v *Vault) BaseDir() string      { return filepath.Join(v.Root, v.BasePath) }
+func (v *Vault) RecurringDir() string { return filepath.Join(v.BaseDir(), "recurring") }
+func (v *Vault) EventsDir() string    { return filepath.Join(v.BaseDir(), "events") }
+func (v *Vault) ArchiveDir() string   { return filepath.Join(v.BaseDir(), "archive") }
 
 // EventPath returns the canonical path for an expanded event.
 // dateStr is YYYY-MM-DD. year is derived from the first four chars.
