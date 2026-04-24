@@ -1,5 +1,10 @@
 # cale**md**ar — design
 
+> **Status:** v1 shipped. All CLI subcommands listed below are implemented
+> and covered by tests / smoke runs. Deferred items (notifications, ICS) are
+> explicitly called out as such.
+
+
 ## Folder layout (in the Obsidian vault)
 
 ```
