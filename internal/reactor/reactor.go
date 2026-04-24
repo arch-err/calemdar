@@ -120,6 +120,7 @@ func migrateOne(v *vault.Vault, path, kind string) (*Migration, error) {
 	if err := os.Remove(path); err != nil {
 		return nil, fmt.Errorf("remove original %s: %w", path, err)
 	}
+	writer.NotifySelf(path)
 
 	rep, err := reconcile.Series(v, r)
 	if err != nil {

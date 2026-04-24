@@ -61,7 +61,7 @@ type Watcher struct {
 	ttl      time.Duration // how long to suppress self-write events
 
 	selfMu     sync.Mutex
-	selfWrites map[string]time.Time
+	selfWrites map[string]selfWriteMark
 
 	pendingMu sync.Mutex
 	pending   map[string]*pendingEvent
@@ -71,6 +71,14 @@ type pendingEvent struct {
 	timer *time.Timer
 	kind  Kind
 	src   Source
+}
+
+// selfWriteMark remembers the post-write mtime so external edits (which
+// change mtime) can be distinguished from our own writes.
+type selfWriteMark struct {
+	mtime    time.Time
+	at       time.Time
+	isRemove bool
 }
 
 // Start begins watching. Returns immediately; events flow on Events().
@@ -90,8 +98,8 @@ func StartWithDebounce(v *vault.Vault, debounce time.Duration) (*Watcher, error)
 		events:     make(chan Event, 64),
 		done:       make(chan struct{}),
 		debounce:   debounce,
-		ttl:        2 * time.Second,
-		selfWrites: make(map[string]time.Time),
+		ttl:        30 * time.Second,
+		selfWrites: make(map[string]selfWriteMark),
 		pending:    make(map[string]*pendingEvent),
 	}
 
@@ -117,11 +125,23 @@ func (w *Watcher) Stop() error {
 	return w.fs.Close()
 }
 
-// NotifySelfWrite records a server-initiated write. Raw fsnotify events on
-// this path within ttl are suppressed.
+// NotifySelfWrite records a server-initiated write. Must be called AFTER
+// the file operation completes so we can stat the new mtime. Subsequent
+// raw events on this path whose mtime matches ours are suppressed; events
+// whose mtime differs (an external edit) are NOT suppressed.
+//
+// For removes, the file is gone; we mark it as a removal and use TTL-only
+// suppression for any immediate follow-up event.
 func (w *Watcher) NotifySelfWrite(path string) {
+	info, err := os.Stat(path)
+	mark := selfWriteMark{at: time.Now()}
+	if err != nil {
+		mark.isRemove = true
+	} else {
+		mark.mtime = info.ModTime()
+	}
 	w.selfMu.Lock()
-	w.selfWrites[path] = time.Now()
+	w.selfWrites[path] = mark
 	w.selfMu.Unlock()
 }
 
@@ -222,6 +242,14 @@ func (w *Watcher) fire(path string) {
 	delete(w.pending, path)
 	w.pendingMu.Unlock()
 
+	// Re-check self-write at fire time. There's a race where the raw event
+	// can arrive before NotifySelfWrite has stored its mark; by the time the
+	// debounce timer fires (500ms later), the mark is always set, so we can
+	// catch and drop the false-external emission here.
+	if w.isRecentSelfWrite(path) {
+		return
+	}
+
 	// Refine Changed vs Deleted by checking existence at fire time — catches
 	// e.g. REMOVE + CREATE in rapid succession (atomic rename on save).
 	kind := p.kind
@@ -262,13 +290,22 @@ func (w *Watcher) classify(path string) (Source, bool) {
 func (w *Watcher) isRecentSelfWrite(path string) bool {
 	w.selfMu.Lock()
 	defer w.selfMu.Unlock()
-	t, ok := w.selfWrites[path]
+	m, ok := w.selfWrites[path]
 	if !ok {
 		return false
 	}
-	if time.Since(t) > w.ttl {
+	if time.Since(m.at) > w.ttl {
 		delete(w.selfWrites, path)
 		return false
 	}
-	return true
+	if m.isRemove {
+		return true
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		// File gone — either the user deleted it or our own follow-up event.
+		// Treat as suppressed to avoid false "external edit" detection.
+		return true
+	}
+	return info.ModTime().Equal(m.mtime)
 }

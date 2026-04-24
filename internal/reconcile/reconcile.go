@@ -72,6 +72,7 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 		if err := os.Remove(ex.Path); err != nil {
 			return rep, fmt.Errorf("sweep %s: %w", ex.Path, err)
 		}
+		writer.NotifySelf(ex.Path)
 		rep.Swept++
 	}
 	return rep, nil

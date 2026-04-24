@@ -13,6 +13,7 @@ import (
 
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/vault"
+	"github.com/arch-err/calemdar/internal/writer"
 )
 
 // DefaultCutoffMonths is how many months back we archive. Anything older
@@ -71,6 +72,8 @@ func RunWithCutoff(v *vault.Vault, cutoff time.Time) (*Report, error) {
 		if err := os.Rename(path, target); err != nil {
 			return fmt.Errorf("archive: move %s: %w", path, err)
 		}
+		writer.NotifySelf(path)   // source is now gone
+		writer.NotifySelf(target) // destination under archive/ (not watched, but harmless)
 		rel, _ := filepath.Rel(v.Root, target)
 		rep.Paths = append(rep.Paths, rel)
 		rep.Moved++
