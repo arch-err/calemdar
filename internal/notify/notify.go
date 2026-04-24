@@ -13,6 +13,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -20,6 +21,18 @@ import (
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/store"
 )
+
+// redactURL returns a log-safe rendering of a URL that may contain
+// `user:pass@` basic-auth in its userinfo segment. Falls back to the raw
+// string if parsing fails (still strips nothing — malformed URLs shouldn't
+// contain creds either).
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	return u.Redacted()
+}
 
 // tickInterval is how often the notifier polls the store. Notifications fire
 // with resolution = tickInterval ± windowHalf. One minute is fine for human
@@ -98,7 +111,7 @@ func (n *Notifier) tick(ctx context.Context, now time.Time) {
 				continue
 			}
 			n.seen[key] = e.Date
-			log.Printf("notify: pushed %q (lead=%dm) → %s/%s", e.Title, lead, n.cfg.NtfyURL, n.cfg.NtfyTopic)
+			log.Printf("notify: pushed %q (lead=%dm) → %s/%s", e.Title, lead, redactURL(n.cfg.NtfyURL), n.cfg.NtfyTopic)
 		}
 	}
 }

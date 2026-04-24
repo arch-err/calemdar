@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"os/signal"
 	"syscall"
 
@@ -10,6 +11,15 @@ import (
 	"github.com/arch-err/calemdar/internal/notify"
 	"github.com/spf13/cobra"
 )
+
+// redactURL keeps basic-auth userinfo out of stdout.
+func redactURL(raw string) string {
+	u, err := url.Parse(raw)
+	if err != nil {
+		return raw
+	}
+	return u.Redacted()
+}
 
 var notifyCmd = &cobra.Command{
 	Use:   "notify",
@@ -38,7 +48,7 @@ func runNotifyTest(cmd *cobra.Command, args []string) error {
 	if err := n.SendTest(ctx); err != nil {
 		return fmt.Errorf("send test: %w", err)
 	}
-	fmt.Printf("sent test push → %s/%s\n", c.NtfyURL, c.NtfyTopic)
+	fmt.Printf("sent test push → %s/%s\n", redactURL(c.NtfyURL), c.NtfyTopic)
 	return nil
 }
 

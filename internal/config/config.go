@@ -11,11 +11,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	"gopkg.in/yaml.v3"
 )
+
+// ntfyTopicRE matches ntfy's documented topic charset: alnum + hyphen +
+// underscore, 1-64 chars. Rejects anything that would alter the URL path
+// shape (slashes, query, fragment).
+var ntfyTopicRE = regexp.MustCompile(`^[A-Za-z0-9_-]{1,64}$`)
 
 // Config is the on-disk shape. All fields optional; zero values → defaults.
 // Vault and BasePath are intentionally NOT omitempty — the stub and `show`
@@ -99,6 +105,9 @@ func (c Config) Validate() error {
 	if strings.Contains(c.BasePath, "..") {
 		return fmt.Errorf("config: base_path %q contains .. — must stay inside the vault", c.BasePath)
 	}
+	if strings.HasPrefix(c.BasePath, "/") || strings.HasPrefix(c.BasePath, string(os.PathSeparator)) {
+		return fmt.Errorf("config: base_path %q must be relative to the vault (no leading slash)", c.BasePath)
+	}
 	if _, err := time.LoadLocation(c.Timezone); err != nil {
 		return fmt.Errorf("config: unknown timezone %q: %w", c.Timezone, err)
 	}
@@ -124,6 +133,10 @@ func (c Config) Validate() error {
 		if strings.TrimSpace(c.Notifications.NtfyTopic) == "" {
 			return fmt.Errorf("config: notifications.ntfy_topic required when notifications.enabled")
 		}
+	}
+	if c.Notifications.NtfyTopic != "" && !ntfyTopicRE.MatchString(c.Notifications.NtfyTopic) {
+		return fmt.Errorf("config: notifications.ntfy_topic %q invalid (must match %s)",
+			c.Notifications.NtfyTopic, ntfyTopicRE.String())
 	}
 	for _, m := range c.Notifications.LeadMinutes {
 		if m <= 0 {
