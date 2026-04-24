@@ -53,8 +53,8 @@ of the series keeps regenerating from the root.
 ## Status
 
 v1 shipped. Single-host, single-timezone (`Europe/Stockholm`), single-vault.
-Notifications and ICS export are deferred — see the [FAQ](faq.md) and
-[design](design.md) for the intended shape.
+Notifications land in-daemon via [ntfy](https://ntfy.sh) — see
+[configuration](configuration.md#notifications). ICS export stays deferred.
 
 ## License
 

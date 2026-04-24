@@ -176,11 +176,18 @@ obsidian writes events/<cal>/<date>-<slug>.md with new date / time
   while the daemon is up; they share the store and contend on SQLite
   transactions.
 
+### `internal/notify` — ntfy push
+
+When `notifications.enabled` is true, `serve` spawns a goroutine that
+ticks every 60 seconds, queries the store for upcoming events, and POSTs
+to `<ntfy_url>/<ntfy_topic>` for each event crossing a configured
+lead-minute window. All-day events are skipped. Optional per-calendar
+filter via `notifications.calendars`. The `calemdar notify test`
+subcommand sends a one-shot test push regardless of `enabled`.
+
 ## What cale**md**ar does NOT do
 
 - No CalDAV, no ICS. If you want those, run
   [Radicale](https://radicale.org/) beside it.
-- No notifications in v1. The intended shape is a separate
-  `calemdar-notify` binary reading the SQLite cache and pushing via ntfy.
 - No multi-device daemon. The vault is Syncthing-friendly, but exactly one
   device runs `serve`.

@@ -167,6 +167,25 @@ Detailed view of one event. Path can be absolute or relative to the vault.
 calemdar event show events/health/2026-05-03-workout.md
 ```
 
+## Notifications
+
+Configured via the `notifications:` block in
+[`config.yaml`](configuration.md#notifications). When enabled, the
+`serve` daemon pushes upcoming events to an ntfy topic; these
+subcommands help set up and verify that path.
+
+### `calemdar notify test`
+
+Send a single test push to the configured ntfy topic. Does NOT gate on
+`notifications.enabled` — the point is to prove the URL + topic work
+before flipping the daemon switch on.
+
+```sh
+calemdar notify test
+```
+
+Errors if `ntfy_url` or `ntfy_topic` are missing.
+
 ## Config
 
 ### `calemdar config path`

@@ -131,6 +131,72 @@ calendars:
   - special
 ```
 
+### `notifications`
+
+Upcoming-event push notifications via [ntfy](https://ntfy.sh). When
+enabled, the `serve` daemon runs a 60-second ticker that queries the
+store for upcoming events and POSTs to `<ntfy_url>/<ntfy_topic>` when a
+start time crosses one of the configured lead-minute windows. All-day
+events are skipped (no natural trigger time).
+
+```yaml
+notifications:
+  enabled: true
+  ntfy_url: https://ntfy.sh
+  ntfy_topic: my-private-calemdar-topic
+  lead_minutes: [5, 60]   # default
+  calendars: []           # empty = all calendars
+```
+
+#### `notifications.enabled`
+
+**Type:** boolean
+**Default:** `false`
+
+Switch. When `false`, the daemon does nothing ntfy-related regardless of
+the other fields.
+
+#### `notifications.ntfy_url`
+
+**Type:** string (URL)
+**Default:** none — required when `enabled`
+
+Base URL of the ntfy server. Public `https://ntfy.sh` works; self-hosted
+instances work too.
+
+#### `notifications.ntfy_topic`
+
+**Type:** string
+**Default:** none — required when `enabled`
+
+Topic name appended to `ntfy_url`. Keep it unguessable if the server is
+public — anyone with the topic name can read and write.
+
+#### `notifications.lead_minutes`
+
+**Type:** list of positive integers
+**Default:** `[5, 60]`
+
+Minutes before an event to push. Each value produces its own notification.
+`[5, 60]` pushes once an hour out and once five minutes out.
+
+#### `notifications.calendars`
+
+**Type:** list of strings
+**Default:** `[]` (all calendars)
+
+Restrict notifications to events in these calendars. Empty means all.
+
+You can verify configuration end-to-end without waiting for a real event:
+
+```sh
+calemdar notify test
+```
+
+This POSTs a single test push and exits. It does NOT gate on
+`enabled`, so you can confirm URL + topic before flipping the switch on
+the daemon.
+
 ## Full example
 
 ```yaml
@@ -148,6 +214,12 @@ calendars:
   - life
   - friends-family
   - special
+notifications:
+  enabled: false
+  # ntfy_url: https://ntfy.sh
+  # ntfy_topic: my-private-calemdar-topic
+  # lead_minutes: [5, 60]
+  # calendars: []
 ```
 
 See also [`examples/config.yaml`](https://github.com/arch-err/calemdar/blob/main/examples/config.yaml)
@@ -163,9 +235,3 @@ values. You can also validate any time with:
 calemdar config show    # prints the merged config or the parse error
 ```
 
-## Notifications (coming)
-
-A future `notifications:` section will configure the `calemdar-notify`
-sidecar (ntfy push on upcoming events). Not wired in v1 — see the
-[FAQ](faq.md#when-do-notifications-land) and
-[design](design.md#notifications-deferred) for the intended shape.

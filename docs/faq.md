@@ -137,17 +137,24 @@ render) is a nontrivial chunk of work and not useful for the v1 user. If
 you need it, open an issue — the schema leaves room for a future `tz:`
 field.
 
-## When do notifications land?
+## Where are notifications?
 
-Intended path: a separate `calemdar-notify` binary that reads the SQLite
-cache for upcoming events in the next N minutes and pushes via ntfy.
-Independent systemd timer, no entanglement with the main daemon. No
-browser notifications. One ntfy topic, one lead-time per calendar.
+Shipped, in-daemon. Configure a ntfy URL + topic under
+`notifications:` in `config.yaml`, flip `enabled: true`, and the
+`serve` daemon starts pushing to `<ntfy_url>/<ntfy_topic>` whenever an
+upcoming event crosses one of the `lead_minutes` windows (default `[5, 60]`).
+All-day events are skipped (no natural trigger time).
 
-No firm date. See [design](design.md#notifications-deferred) for the
-shape, and
-[configuration](configuration.md#notifications-coming) for where the
-config knob will live.
+Verify end-to-end before flipping the switch on the daemon:
+
+```sh
+calemdar notify test
+```
+
+Full reference: [configuration](configuration.md#notifications).
+
+No browser notifications. No per-event config. One topic, one lead-time
+list, optional per-calendar filter.
 
 ## I found a bug / want a feature
 
