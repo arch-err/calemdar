@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 type Vault struct {
@@ -26,6 +27,11 @@ func Resolve(override string) (*Vault, error) {
 	}
 	if p == "" {
 		return nil, fmt.Errorf("vault path not set: use --vault or $%s", EnvVar)
+	}
+	// Expand leading ~ / ~user — filepath.Abs doesn't do this and users put
+	// it in the config file regardless.
+	if expanded, err := expandTilde(p); err == nil {
+		p = expanded
 	}
 	abs, err := filepath.Abs(p)
 	if err != nil {
@@ -50,4 +56,20 @@ func (v *Vault) ArchiveDir() string   { return filepath.Join(v.Root, "archive") 
 func (v *Vault) EventPath(calendar, dateStr, slug string) string {
 	year := dateStr[:4]
 	return filepath.Join(v.EventsDir(), calendar, year, dateStr+"-"+slug+".md")
+}
+
+// expandTilde turns a leading "~" or "~/" into the user's home dir. Returns
+// the input unchanged if no tilde prefix.
+func expandTilde(p string) (string, error) {
+	if p == "~" {
+		return os.UserHomeDir()
+	}
+	if strings.HasPrefix(p, "~/") {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return p, err
+		}
+		return filepath.Join(home, p[2:]), nil
+	}
+	return p, nil
 }
