@@ -65,8 +65,9 @@ func runConfigInit(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("%s already exists — edit it with `calemdar config edit`", path)
+	override, _ := cmd.Flags().GetBool("override")
+	if _, err := os.Stat(path); err == nil && !override {
+		return fmt.Errorf("%s already exists — edit it with `calemdar config edit`, or re-run with --override", path)
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("mkdir config dir: %w", err)
@@ -159,5 +160,6 @@ type yamlBuffer struct{ s *strings.Builder }
 func (b *yamlBuffer) Write(p []byte) (int, error) { return b.s.Write(p) }
 
 func init() {
+	configInitCmd.Flags().Bool("override", false, "overwrite an existing config file")
 	configCmd.AddCommand(configPathCmd, configShowCmd, configInitCmd, configEditCmd)
 }
