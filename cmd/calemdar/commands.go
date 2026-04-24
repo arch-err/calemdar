@@ -9,6 +9,7 @@ import (
 	"github.com/arch-err/calemdar/internal/expand"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/series"
+	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/arch-err/calemdar/internal/writer"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +49,12 @@ func runExpand(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return fmt.Errorf("series %q not found", args[0])
 	}
+	return reconcileSeries(v, r)
+}
 
+// reconcileSeries expands r, writes planned events (respecting user-owned),
+// and sweeps orphaned future non-user-owned events. Past events are immutable.
+func reconcileSeries(v *vault.Vault, r *model.Root) error {
 	loc := model.Stockholm()
 	today := model.Today(loc)
 	end := today.AddDate(0, 12, 0)
@@ -58,10 +64,14 @@ func runExpand(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	var created, updated, skipped int
+	planned := make(map[string]bool, len(events))
 	for _, e := range events {
 		e.Path = v.EventPath(r.Calendar, e.Date, r.Slug)
+		planned[e.Path] = true
+	}
 
+	var created, updated, skipped int
+	for _, e := range events {
 		if existing, err := model.ParseEvent(e.Path); err == nil {
 			if existing.UserOwned {
 				skipped++
@@ -71,23 +81,63 @@ func runExpand(cmd *cobra.Command, args []string) error {
 		} else {
 			created++
 		}
-
 		if err := writer.WriteEvent(e); err != nil {
 			return fmt.Errorf("write %s: %w", e.Path, err)
 		}
 	}
 
-	fmt.Printf("series %s (%s): %d events — created %d, updated %d, skipped %d (user-owned)\n",
-		r.Slug, r.ID, len(events), created, updated, skipped)
+	existing, err := series.LoadEventsForSeries(v, r)
+	if err != nil {
+		return err
+	}
+	var deleted int
+	for _, ex := range existing {
+		if planned[ex.Path] {
+			continue
+		}
+		if ex.UserOwned {
+			continue
+		}
+		exDate, err := model.ParseDate(ex.Date, loc)
+		if err != nil || exDate.Before(today) {
+			continue
+		}
+		if err := os.Remove(ex.Path); err != nil {
+			return fmt.Errorf("sweep %s: %w", ex.Path, err)
+		}
+		deleted++
+	}
+
+	fmt.Printf("series %s (%s): %d in plan — created %d, updated %d, skipped %d (user-owned), swept %d orphans\n",
+		r.Slug, r.ID, len(events), created, updated, skipped, deleted)
 	return nil
 }
 
 var extendCmd = &cobra.Command{
 	Use:   "extend",
-	Short: "Extend the 12-month horizon for all series",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		return errNotImplemented("extend")
-	},
+	Short: "Expand every recurring series (12-month horizon)",
+	RunE:  runExtend,
+}
+
+func runExtend(cmd *cobra.Command, args []string) error {
+	v, err := resolveVault(cmd)
+	if err != nil {
+		return err
+	}
+	roots, err := series.LoadAll(v)
+	if err != nil {
+		return err
+	}
+	if len(roots) == 0 {
+		fmt.Println("no recurring series")
+		return nil
+	}
+	for _, r := range roots {
+		if err := reconcileSeries(v, r); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 var archiveCmd = &cobra.Command{

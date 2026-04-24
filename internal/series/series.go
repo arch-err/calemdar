@@ -60,3 +60,35 @@ func FindByIDOrSlug(v *vault.Vault, q string) (*model.Root, error) {
 	}
 	return nil, nil
 }
+
+// LoadEventsForSeries returns all expanded events on disk whose series-id
+// matches r.ID. Scans only events/<r.Calendar>/ since we never write a
+// series' events outside its calendar folder.
+func LoadEventsForSeries(v *vault.Vault, r *model.Root) ([]*model.Event, error) {
+	dir := filepath.Join(v.EventsDir(), r.Calendar)
+	if _, err := os.Stat(dir); errors.Is(err, os.ErrNotExist) {
+		return nil, nil
+	}
+
+	var out []*model.Event
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || !strings.HasSuffix(d.Name(), ".md") {
+			return nil
+		}
+		e, err := model.ParseEvent(path)
+		if err != nil {
+			return fmt.Errorf("load events: %w", err)
+		}
+		if e.SeriesID == r.ID {
+			out = append(out, e)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
