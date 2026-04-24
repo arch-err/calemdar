@@ -44,7 +44,9 @@ Not v1: "last friday of month", "second weekday of month", count-based terminati
 
 ## Expanded event
 
-**Location:** `events/<calendar>/<year>/<YYYY-MM-DD>-<slug>.md`.
+**Location:** `events/<calendar>/<YYYY-MM-DD>-<slug>.md`. Flat — Full
+Calendar's local-folder source does not recurse, so a year subfolder would
+hide events from its index.
 
 **Author:** server (on series expansion) or human (for true one-offs, via CLI or editor).
 Human may drag/edit an expanded event in Obsidian — this flips `user-owned: true`

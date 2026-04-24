@@ -115,8 +115,7 @@ With `serve` running, in Obsidian:
 <vault>/
 ├── events/                      # FC sources, one folder per calendar = one color
 │   ├── health/ tech/ work/ life/ friends-family/ special/
-│   │   └── 2026/                # year subfolders (server-created)
-│   │       └── 2026-05-03-workout.md
+│   │   └── 2026-05-03-workout.md    # flat; FC doesn't recurse
 ├── recurring/                   # NOT an FC source. server's source of truth
 │   └── workout.md
 ├── archive/                     # NOT an FC source. >6mo events moved here

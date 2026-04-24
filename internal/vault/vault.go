@@ -56,10 +56,11 @@ func (v *Vault) EventsDir() string    { return filepath.Join(v.BaseDir(), "event
 func (v *Vault) ArchiveDir() string   { return filepath.Join(v.BaseDir(), "archive") }
 
 // EventPath returns the canonical path for an expanded event.
-// dateStr is YYYY-MM-DD. year is derived from the first four chars.
+// dateStr is YYYY-MM-DD. Events live flat under events/<calendar>/ — Full
+// Calendar's local-source reader does NOT recurse into subfolders, so a
+// year subfolder would hide the events from its index.
 func (v *Vault) EventPath(calendar, dateStr, slug string) string {
-	year := dateStr[:4]
-	return filepath.Join(v.EventsDir(), calendar, year, dateStr+"-"+slug+".md")
+	return filepath.Join(v.EventsDir(), calendar, dateStr+"-"+slug+".md")
 }
 
 // expandTilde turns a leading "~" or "~/" into the user's home dir. Returns

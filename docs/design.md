@@ -10,10 +10,9 @@
 ```
 <vault>/
 ├── events/                      # FC reads these. one source per subfolder = one color
-│   ├── health/
-│   │   └── 2026/
-│   │       ├── 2026-05-03-workout.md
-│   │       └── 2026-05-05-meds-refill.md
+│   ├── health/                  # flat — FC does NOT recurse into subfolders
+│   │   ├── 2026-05-03-workout.md
+│   │   └── 2026-05-05-meds-refill.md
 │   ├── tech/
 │   ├── work/
 │   ├── life/
@@ -32,8 +31,9 @@
 
 - **Six FC sources, one per calendar** → each gets its own color without any
   per-event color property.
-- **Year subfolder inside each calendar** → keeps any single directory from
-  exploding (~365 files/yr for a daily event, manageable).
+- **Events flat under each calendar** → Full Calendar's local-folder source
+  does not recurse. Year subfolders hide events from the index. Filenames
+  are date-prefixed so sort-by-name is chronological.
 - **`recurring/` outside `events/`** → FC never sees the root templates.
 - **`archive/` outside `events/`** → FC never indexes old data. Full-text search
   and grep still work for the human.
