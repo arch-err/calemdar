@@ -168,8 +168,15 @@ func runSeriesExcept(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("series %q not found", args[0])
 	}
 	date := args[1]
-	if _, err := model.ParseDate(date, time.UTC); err != nil {
+	loc := model.Location()
+	d, err := model.ParseDate(date, loc)
+	if err != nil {
 		return fmt.Errorf("bad date: %w", err)
+	}
+	if d.Before(model.Today(loc)) {
+		fmt.Fprintf(os.Stderr,
+			"note: %s is in the past — past events are never rewritten, so the existing file (if any) stays put. The exception only affects future reconciles.\n",
+			date)
 	}
 
 	// Dedup: only append if not already present.
