@@ -13,9 +13,6 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "calemdar",
 	Short: "Recurring-event manager for Obsidian Full Calendar",
-	Long: `cale**md**ar expands recurring event templates into individual
-per-occurrence markdown files, so Obsidian's Full Calendar plugin sees
-only flat single events and its drag-a-recurring-event footgun never fires.`,
 	// Loads config once, before any subcommand runs.
 	PersistentPreRunE: loadConfig,
 	// Don't print usage on runtime errors; cobra only shows Usage on flag
@@ -24,6 +21,12 @@ only flat single events and its drag-a-recurring-event footgun never fires.`,
 }
 
 func main() {
+	// Register template funcs before any template is rendered.
+	cobra.AddTemplateFunc("cy", cyan)
+	cobra.AddTemplateFunc("gr", gray)
+	cobra.AddTemplateFunc("yl", yellow)
+	applyHelpStyling(rootCmd)
+
 	rootCmd.PersistentFlags().String("vault", "", "vault root path (overrides config + env)")
 
 	rootCmd.AddCommand(serveCmd)
