@@ -48,10 +48,38 @@ var configShowCmd = &cobra.Command{
 	},
 }
 
+var configInitCmd = &cobra.Command{
+	Use:   "init",
+	Short: "Write a default config file (errors if one already exists)",
+	RunE:  runConfigInit,
+}
+
 var configEditCmd = &cobra.Command{
 	Use:   "edit",
 	Short: "Open the config file in $EDITOR; validate on save",
 	RunE:  runConfigEdit,
+}
+
+func runConfigInit(cmd *cobra.Command, args []string) error {
+	path, err := config.Path()
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(path); err == nil {
+		return fmt.Errorf("%s already exists — edit it with `calemdar config edit`", path)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("mkdir config dir: %w", err)
+	}
+	stub, err := buildStub()
+	if err != nil {
+		return err
+	}
+	if err := os.WriteFile(path, stub, 0o644); err != nil {
+		return err
+	}
+	fmt.Printf("wrote %s\nnext: `calemdar config edit` to set vault and tweak\n", path)
+	return nil
 }
 
 func runConfigEdit(cmd *cobra.Command, args []string) error {
@@ -131,5 +159,5 @@ type yamlBuffer struct{ s *strings.Builder }
 func (b *yamlBuffer) Write(p []byte) (int, error) { return b.s.Write(p) }
 
 func init() {
-	configCmd.AddCommand(configPathCmd, configShowCmd, configEditCmd)
+	configCmd.AddCommand(configPathCmd, configShowCmd, configInitCmd, configEditCmd)
 }

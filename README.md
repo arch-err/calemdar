@@ -106,6 +106,7 @@ With `serve` running, in Obsidian:
 | `calemdar event show <path>`             | Event detail |
 | `calemdar config path`                   | Print the config file lookup path |
 | `calemdar config show`                   | Print the active (post-merge) config |
+| `calemdar config init`                   | Write a default config file (errors if one exists) |
 | `calemdar config edit`                   | Open config in `$EDITOR`, validate on save |
 
 ## Vault layout
