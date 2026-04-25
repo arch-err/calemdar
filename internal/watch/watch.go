@@ -241,7 +241,9 @@ func (w *Watcher) onRaw(ev fsnotify.Event) {
 	// event before we finish registering the inner one.
 	if ev.Op&fsnotify.Create != 0 {
 		if info, err := os.Stat(ev.Name); err == nil && info.IsDir() {
-			_ = w.addTree(ev.Name)
+			if err := w.addTree(ev.Name); err != nil {
+				log.Printf("watch: addTree %s: %v", ev.Name, err)
+			}
 		}
 	}
 

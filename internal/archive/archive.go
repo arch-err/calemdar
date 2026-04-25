@@ -67,11 +67,16 @@ func RunWithCutoff(v *vault.Vault, cutoff time.Time) (*Report, error) {
 		if err := os.MkdirAll(targetDir, 0o755); err != nil {
 			return err
 		}
+		// Mark the source as a self-delete BEFORE the rename — Rename
+		// erases the inode from the source's POV, so a post-syscall
+		// NotifySelf can only flag it as a removal anyway. Doing it
+		// pre-syscall makes the intent explicit. The target lives under
+		// archive/, which the watcher doesn't track, so no notification
+		// is needed there.
+		writer.NotifySelfDelete(path)
 		if err := os.Rename(path, target); err != nil {
 			return fmt.Errorf("archive: move %s: %w", path, err)
 		}
-		writer.NotifySelf(path)   // source is now gone
-		writer.NotifySelf(target) // destination under archive/ (not watched, but harmless)
 		rel, _ := filepath.Rel(v.Root, target)
 		rep.Paths = append(rep.Paths, rel)
 		rep.Moved++

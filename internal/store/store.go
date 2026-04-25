@@ -32,7 +32,7 @@ func Open(v *vault.Vault) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		return nil, fmt.Errorf("store: mkdir: %w", err)
 	}
-	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(on)")
+	db, err := sql.Open("sqlite", dbPath+"?_pragma=journal_mode(WAL)&_pragma=foreign_keys(on)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("store: open: %w", err)
 	}
@@ -97,7 +97,9 @@ CREATE TABLE IF NOT EXISTS notify_fired (
   PRIMARY KEY (event_path, notify_index, fire_at_planned)
 );
 
-CREATE INDEX IF NOT EXISTS notify_fired_path ON notify_fired(event_path);
+-- notify_fired_path index removed: the PRIMARY KEY (event_path, ...)
+-- already covers any event_path-prefixed query, so the separate index
+-- was just doubling the write cost.
 `
 	_, err := s.db.Exec(ddl)
 	if err != nil {
@@ -118,6 +120,12 @@ CREATE INDEX IF NOT EXISTS notify_fired_path ON notify_fired(event_path);
 		if !strings.Contains(err.Error(), "duplicate column name") {
 			return err
 		}
+	}
+	// Drop the redundant notify_fired_path index from existing DBs. The
+	// PRIMARY KEY (event_path, notify_index, fire_at_planned) already
+	// covers every query we issue against this table.
+	if _, err := s.db.Exec(`DROP INDEX IF EXISTS notify_fired_path`); err != nil {
+		return err
 	}
 	return nil
 }
@@ -289,6 +297,65 @@ func (s *Store) UpsertOccurrence(e *model.Event, calendar string) error {
 func (s *Store) DeleteOccurrence(path string) error {
 	_, err := s.db.Exec(`DELETE FROM occurrences WHERE path = ?`, path)
 	return err
+}
+
+// BatchUpsertOccurrences runs N upserts inside one transaction, paying
+// the WAL fsync cost once instead of N times. calendarFor resolves the
+// calendar string for each event (typically calendarFromPath in serve).
+//
+// Used by reindex and the post-reconcile store refresh in dispatch —
+// both can produce hundreds of inserts on a single fanout.
+func (s *Store) BatchUpsertOccurrences(events []*model.Event, calendarFor func(*model.Event) string) error {
+	if len(events) == 0 {
+		return nil
+	}
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	stmt, err := tx.Prepare(`
+		INSERT INTO occurrences (path, series_id, calendar, date, title,
+			start_time, end_time, all_day, user_owned, expanded_at, notify_json)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?)
+		ON CONFLICT(path) DO UPDATE SET
+			series_id=excluded.series_id,
+			calendar=excluded.calendar,
+			date=excluded.date,
+			title=excluded.title,
+			start_time=excluded.start_time,
+			end_time=excluded.end_time,
+			all_day=excluded.all_day,
+			user_owned=excluded.user_owned,
+			expanded_at=excluded.expanded_at,
+			notify_json=excluded.notify_json
+	`)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+	defer stmt.Close()
+	for _, e := range events {
+		var notifyJSON any
+		if len(e.Notify) > 0 {
+			raw, merr := json.Marshal(e.Notify)
+			if merr != nil {
+				_ = tx.Rollback()
+				return fmt.Errorf("store: marshal notify: %w", merr)
+			}
+			notifyJSON = string(raw)
+		}
+		cal := calendarFor(e)
+		if _, err := stmt.Exec(
+			e.Path, nullIfEmpty(e.SeriesID), cal, e.Date, e.Title,
+			nullIfEmpty(e.StartTime), nullIfEmpty(e.EndTime),
+			boolToInt(e.AllDay), boolToInt(e.UserOwned), nullIfEmpty(e.SeriesExpandedAt),
+			notifyJSON,
+		); err != nil {
+			_ = tx.Rollback()
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 // GetOccurrenceByPath returns the cached row for path, or nil if not

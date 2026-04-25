@@ -20,7 +20,8 @@ type ReindexReport struct {
 }
 
 // Reindex wipes the cache and repopulates it from the vault's recurring/ and
-// events/ trees. Idempotent.
+// events/ trees. Idempotent. Inserts run inside a single transaction so
+// the WAL fsync is paid once across hundreds of rows, not per-row.
 func (s *Store) Reindex(v *vault.Vault) (*ReindexReport, error) {
 	if err := s.Wipe(); err != nil {
 		return nil, err
@@ -43,6 +44,10 @@ func (s *Store) Reindex(v *vault.Vault) (*ReindexReport, error) {
 		return rep, nil
 	}
 
+	// Collect first, then batch-upsert. The collect step still walks the
+	// filesystem (no way around that for a true reindex), but we replace
+	// N tiny commits with one.
+	var events []*model.Event
 	err = filepath.WalkDir(eventsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -54,14 +59,19 @@ func (s *Store) Reindex(v *vault.Vault) (*ReindexReport, error) {
 		if perr != nil {
 			return fmt.Errorf("reindex: parse %s: %w", path, perr)
 		}
-		calendar := calendarFromPath(v, path)
-		if err := s.UpsertOccurrence(e, calendar); err != nil {
-			return fmt.Errorf("reindex: upsert %s: %w", path, err)
-		}
-		rep.Occurrences++
+		events = append(events, e)
 		return nil
 	})
-	return rep, err
+	if err != nil {
+		return rep, err
+	}
+	if err := s.BatchUpsertOccurrences(events, func(e *model.Event) string {
+		return calendarFromPath(v, e.Path)
+	}); err != nil {
+		return rep, fmt.Errorf("reindex: batch upsert: %w", err)
+	}
+	rep.Occurrences = len(events)
+	return rep, nil
 }
 
 func calendarFromPath(v *vault.Vault, path string) string {

@@ -57,16 +57,17 @@ func dispatchRecurring(opts Options, ev watch.Event) error {
 	if err := opts.Store.UpsertSeries(r); err != nil {
 		return fmt.Errorf("store upsert series: %w", err)
 	}
-	// Refresh store occurrences for this series.
+	// Refresh store occurrences for this series. Reconcile's writer
+	// suppresses fsnotify echoes via NotifySelf, so the autoown-driven
+	// store path doesn't fire — we must refresh here. Batched.
 	existing, err := series.LoadEventsForSeries(opts.Vault, r)
 	if err != nil {
 		return err
 	}
-	for _, e := range existing {
-		cal := calendarFromPath(opts.Vault, e.Path)
-		if err := opts.Store.UpsertOccurrence(e, cal); err != nil {
-			return fmt.Errorf("store upsert occurrence: %w", err)
-		}
+	if err := opts.Store.BatchUpsertOccurrences(existing, func(e *model.Event) string {
+		return calendarFromPath(opts.Vault, e.Path)
+	}); err != nil {
+		return fmt.Errorf("store batch upsert: %w", err)
 	}
 	return nil
 }
@@ -138,9 +139,10 @@ func handleFCRecurring(opts Options, path string) error {
 		}
 		existing, err := series.LoadEventsForSeries(opts.Vault, m.Series)
 		if err == nil {
-			for _, e := range existing {
-				cal := calendarFromPath(opts.Vault, e.Path)
-				_ = opts.Store.UpsertOccurrence(e, cal)
+			if berr := opts.Store.BatchUpsertOccurrences(existing, func(e *model.Event) string {
+				return calendarFromPath(opts.Vault, e.Path)
+			}); berr != nil {
+				log.Printf("serve: store batch upsert after migration: %v", berr)
 			}
 		}
 	}

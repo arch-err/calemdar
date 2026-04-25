@@ -117,10 +117,12 @@ func migrateOne(v *vault.Vault, path, kind string) (*Migration, error) {
 	if err := writer.WriteRoot(r); err != nil {
 		return nil, err
 	}
+	// Mark as self-delete BEFORE the syscall — once the inode is gone
+	// there's nothing for a post-syscall stat to suppress against.
+	writer.NotifySelfDelete(path)
 	if err := os.Remove(path); err != nil {
 		return nil, fmt.Errorf("remove original %s: %w", path, err)
 	}
-	writer.NotifySelf(path)
 
 	rep, err := reconcile.Series(v, r, nil)
 	if err != nil {
