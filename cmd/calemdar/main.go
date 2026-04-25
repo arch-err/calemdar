@@ -61,6 +61,7 @@ func main() {
 	rootCmd.AddCommand(reactorCmd)
 	rootCmd.AddCommand(eventCmd)
 	rootCmd.AddCommand(seriesCmd)
+	rootCmd.AddCommand(recurringCmd)
 	rootCmd.AddCommand(configCmd)
 	rootCmd.AddCommand(notifyCmd)
 
