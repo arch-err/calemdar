@@ -1,0 +1,1398 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Recurring-event manager for Obsidian Full Calendar. Markdown as source of truth, server-expanded occurrences.">
+      
+      
+        <meta name="author" content="arch-err">
+      
+      
+        <link rel="canonical" href="https://arch-err.github.io/calemdar/reviews/2026-04-25-perf/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Performance + simplification review — 2026-04-25 - calemdar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#performance-simplification-review-2026-04-25" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="calemdar" class="md-header__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            calemdar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Performance + simplification review — 2026-04-25
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="calemdar" class="md-nav__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    calemdar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#tldr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        TL;DR
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Memory
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Memory">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#m1-loadeventsforseries-walks-parses-the-whole-calendar-dir-every-reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M1. LoadEventsForSeries walks + parses the whole calendar dir, every reconcile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m2-fsnotify-storm-self-feedback-during-fanout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M2. fsnotify-storm self-feedback during fanout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m3-rawsource-snapshot-stored-per-series-in-memory-sqlite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M3. RawSource snapshot stored per series in memory + sqlite
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m4-expandexpand-re-parses-exception-strings-on-every-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M4. expand.Expand re-parses exception strings on every call
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#m5-selfwrites-map-only-prunes-on-lookup-never-proactively" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        M5. selfWrites map only prunes on lookup, never proactively
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cpu-wall-clock" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CPU / wall-clock
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CPU / wall-clock">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c1-sqlite-occurrence-upserts-not-batched-in-a-transaction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C1. SQLite occurrence upserts not batched in a transaction
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c2-dispatchevents-reads-the-file-three-times-for-one-changed-event" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C2. dispatchEvents reads the file three times for one Changed event
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c3-splitfrontmatter-allocates-a-1mb-scanner-buffer-for-every-parse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C3. splitFrontmatter allocates a 1MB scanner buffer for every parse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c4-fcparsesplitfrontmatter-is-a-copy-paste-of-modelsplitfrontmatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C4. fcparse.splitFrontmatter is a copy-paste of model.splitFrontmatter
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c5-fcparsedetect-reads-the-entire-file-just-to-check-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C5. fcparse.Detect reads the entire file just to check type:
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c6-nightly-reconcile-doesnt-refresh-occurrences-in-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C6. Nightly reconcile doesn't refresh occurrences in store
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#simplification-opportunities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Simplification opportunities
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Simplification opportunities">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#s1-drop-loadeventsforseries-its-a-workaround-for-not-querying-the-cache" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S1. Drop LoadEventsForSeries — it's a workaround for not querying the cache
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s2-three-calendarfrompath-copies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S2. Three calendarFromPath copies
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s3-notifyregistry-is-a-singleton-in-a-package-accessed-via-package-level" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S3. notify.registry is a singleton in a package, accessed via package-level
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s4-scanseries-partially-duplicated-in-listseries-getseriesbypath" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S4. scanSeries partially duplicated in ListSeries / GetSeriesByPath
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s5-notification-struct-carries-event-metadata-that-backends-dont-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S5. Notification struct carries event metadata that backends don't use
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s6-serve-options-struct-is-a-2-field-bag" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S6. Serve options struct is a 2-field bag
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#s7-backend-interface-is-one-method-send-plus-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        S7. Backend interface is one method (Send) plus Name
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-lifecycle" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource lifecycle
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Resource lifecycle">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#r1-actionsrunner-goroutines-are-not-waited-on-at-shutdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        R1. actions.Runner goroutines are not waited on at shutdown
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#r2-watcher-events-channel-buffer-is-64-no-backpressure-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        R2. Watcher events channel buffer is 64; no backpressure handling
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#r3-pendingmu-locked-timer-leaks-on-stop-if-flushpending-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        R3. pendingMu-locked timer leaks on Stop if flushPending runs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#r4-selfwrites-map-has-no-upper-bound-no-proactive-prune-also-m5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        R4. selfWrites map has no upper bound + no proactive prune (also M5)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#r5-sqlite-connection-has-no-setmaxopenconnssetconnmaxidletime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        R5. SQLite connection has no SetMaxOpenConns/SetConnMaxIdleTime
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sqlite" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sqlite
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sqlite">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#q1-no-bulk-insert-path-covered-in-c1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q1. No bulk-insert path (covered in C1)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q2-isfired-is-a-select-count-instead-of-select-1-limit-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q2. IsFired is a SELECT COUNT(*) instead of SELECT 1 ... LIMIT 1
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q3-notify_fired-has-no-composite-index-for-the-dedupe-lookup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q3. notify_fired has no composite index for the dedupe lookup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q4-upsertseries-json-marshals-bydaybymonthdayexceptions-even-when" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q4. UpsertSeries JSON-marshals byday/bymonthday/exceptions even when
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q5-listupcomingwithnotify-returns-rows-that-get-filtered-out-in-go" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q5. ListUpcomingWithNotify returns rows that get filtered out in Go
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#q6-wipe-followed-by-per-row-inserts-in-reindex-is-the-worst-case" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Q6. Wipe followed by per-row inserts in Reindex is the worst case
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#top-5-wins-ranked" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top 5 wins, ranked
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-11gb-peak-smoking-gun" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The 1.1GB-peak smoking gun
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-simplification-if-i-had-to-ship-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One simplification, if I had to ship one
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/arch-err/calemdar/edit/main/docs/reviews/2026-04-25-perf.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="performance-simplification-review-2026-04-25">Performance + simplification review — 2026-04-25<a class="headerlink" href="#performance-simplification-review-2026-04-25" title="Permanent link">&para;</a></h1>
+<h2 id="tldr">TL;DR<a class="headerlink" href="#tldr" title="Permanent link">&para;</a></h2>
+<p>The 1.1GB peak isn't from event count — it's from how reconcile and dispatch reload
+data. A single 260-event reconcile triggers ~260 fsnotify events, each of which
+re-reads + YAML-parses the <em>entire</em> events tree (twice in the worst case), times
+~260 self-write marks landing back-to-back. The hot path is O(N²) in file reads,
+not allocations per event. Wrapping the SQLite upsert loop in a transaction is
+the second-biggest win; the first is killing the per-event re-walks.</p>
+<p><strong>If I had to ship one change</strong>: replace <code>series.LoadEventsForSeries</code> with a
+SQLite query against the <code>occurrences</code> table (it's already indexed by <code>series_id</code>).
+That single change drops reconcile from O(events_in_calendar × events_in_series)
+to O(events_in_series), eliminates ~520 full-tree YAML parses per reconcile cycle,
+and is the dominant contributor to the 1.1GB peak.</p>
+<hr />
+<h2 id="memory">Memory<a class="headerlink" href="#memory" title="Permanent link">&para;</a></h2>
+<h3 id="m1-loadeventsforseries-walks-parses-the-whole-calendar-dir-every-reconcile">M1. <code>LoadEventsForSeries</code> walks + parses the whole calendar dir, every reconcile<a class="headerlink" href="#m1-loadeventsforseries-walks-parses-the-whole-calendar-dir-every-reconcile" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/series/series.go:67-94</code></p>
+<p>Every call to <code>reconcile.Series</code> invokes <code>series.LoadEventsForSeries</code>, which
+<code>filepath.WalkDir</code>s <code>events/&lt;calendar&gt;/</code> and calls <code>model.ParseEvent</code> on <strong>every</strong>
+file — full <code>os.ReadFile</code> + <code>bufio.Scanner</code> (with a 1MB buffer per call!) +
+<code>yaml.Unmarshal</code>. It then filters by <code>e.SeriesID == r.ID</code>. For a calendar with
+N events of which K belong to this series, we read+parse N files to get K. With
+N≈1000 and the reconcile path looping 260 times during a single fanout (see
+M2), that's ~260,000 file reads and YAML parses per "expand 260 events" run.</p>
+<p>Each <code>splitFrontmatter</code> call allocates a <code>bufio.Scanner</code> with a 1MB buffer
+(<code>scanner.Buffer(make([]byte, 1024*1024), 16*1024*1024)</code>) — 260,000 × 1MB
+backing buffer allocations, even if most files are 500 bytes. Go's GC will
+reclaim them but the live working set during the burst is enormous. <strong>This is
+the dominant contributor to the 1.1GB peak.</strong></p>
+<p><strong>Fix:</strong> the SQLite cache already has <code>occurrences</code> indexed by <code>series_id</code>. Add
+a <code>Store.ListOccurrencesBySeries(seriesID)</code> method (5 lines) and call it from
+reconcile. <strong>Estimated impact: 600-900 MB reduction during 260-fanout, plus
+order-of-magnitude wall-clock improvement.</strong></p>
+<h3 id="m2-fsnotify-storm-self-feedback-during-fanout">M2. fsnotify-storm self-feedback during fanout<a class="headerlink" href="#m2-fsnotify-storm-self-feedback-during-fanout" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/serve/dispatch.go:60-69</code>, <code>internal/reconcile/reconcile.go:106</code></p>
+<p>Every <code>writer.WriteEvent</code> in reconcile calls <code>NotifySelf</code>, which <code>os.Stat</code>s and
+records the post-write mtime in <code>selfWrites</code>. Most are correctly suppressed —
+but the watcher's <code>raceWindow</code> fallback (<code>watch.go:91, 339</code>) deliberately
+trusts mtime mismatches inside a 3s window. After the 3s window, <em>any</em> event
+that the kernel finalises late produces a Changed event that lands in
+<code>dispatchEvents</code> → <code>fcparse.Detect</code> (full file read + YAML parse) →
+<code>autoown.FlipIfNeeded</code> (ANOTHER full file read + YAML parse + write back) →
+<code>model.ParseEvent</code> (full file read + YAML parse, third time) →
+<code>Store.UpsertOccurrence</code>. That's three full reads per "leaked" event — and the
+mtime-late-finalise problem is exactly the bulk-fanout race the comment
+acknowledges.</p>
+<p>Worse: <code>dispatchRecurring</code> itself, after a single root edit, calls
+<code>LoadEventsForSeries</code> (M1 — full tree walk) and then <code>UpsertOccurrence</code> in a
+loop. The loop has no transaction (see Sqlite section). For a 260-event series
+that's 260 sequential disk-fsync writes after the initial 260 file writes.</p>
+<p><strong>Fix:</strong> wrap reconcile + occurrence-refresh in a single SQLite transaction;
+short-circuit dispatch when an incoming events/ event was just written by us
+(check the watcher's selfWrites map at dispatch entry, not just at watch
+suppression). <strong>Estimated impact: 100-200 MB peak, 2-3× wall-clock during
+fanout.</strong></p>
+<h3 id="m3-rawsource-snapshot-stored-per-series-in-memory-sqlite">M3. <code>RawSource</code> snapshot stored per series in memory + sqlite<a class="headerlink" href="#m3-rawsource-snapshot-stored-per-series-in-memory-sqlite" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/model/parse.go:77</code>, <code>internal/store/store.go:159</code></p>
+<p><code>ParseRoot</code> keeps <code>r.RawSource = string(raw)</code> — a full copy of every recurring
+file in memory, used only for the deletion-restore snapshot. For 260-event
+expansions where the root file is ~10KB, this is 2.6MB of duplicated string
+memory — small, but it's also written verbatim into the <code>series.body_raw</code>
+column on every UpsertSeries, so it's also sitting in the SQLite page cache.</p>
+<p><strong>Fix:</strong> lazy — only populate <code>RawSource</code> when the caller is about to write
+the snapshot (UpsertSeries), and read fresh from disk at that point. Or store
+the snapshot on disk at <code>recurring/.snapshots/&lt;id&gt;.md</code> instead of in the DB.
+<strong>Estimated impact: small (~10 MB), but clean architectural win.</strong></p>
+<h3 id="m4-expandexpand-re-parses-exception-strings-on-every-call">M4. <code>expand.Expand</code> re-parses exception strings on every call<a class="headerlink" href="#m4-expandexpand-re-parses-exception-strings-on-every-call" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/expand/expand.go:47-54</code></p>
+<p>For each Expand call, the <code>Exceptions</code> slice is re-parsed via
+<code>model.ParseDate</code> and a new map is built. Cheap on its own, but during a
+fanout the same root may be reconciled multiple times in a single fsnotify
+storm. Cache parsed exceptions on the <code>Root</code> after parse.</p>
+<p><strong>Estimated impact: negligible standalone, but pairs well with the M1/M2 fix.</strong></p>
+<h3 id="m5-selfwrites-map-only-prunes-on-lookup-never-proactively">M5. <code>selfWrites</code> map only prunes on lookup, never proactively<a class="headerlink" href="#m5-selfwrites-map-only-prunes-on-lookup-never-proactively" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/watch/watch.go:310-343</code></p>
+<p><code>isRecentSelfWrite</code> deletes a stale entry only when that exact path is queried
+again. After a 260-event fanout, 260 entries linger until either their paths
+are touched again or process exit. With repeated daily reconciles, the map
+slowly grows. Not a leak in pathological sense (each entry is small), but no
+sweep exists.</p>
+<p><strong>Fix:</strong> add a periodic prune in the loop (every 30s, sweep entries past TTL).
+~10 lines. <strong>Estimated impact: tiny — mostly hygiene.</strong></p>
+<hr />
+<h2 id="cpu-wall-clock">CPU / wall-clock<a class="headerlink" href="#cpu-wall-clock" title="Permanent link">&para;</a></h2>
+<h3 id="c1-sqlite-occurrence-upserts-not-batched-in-a-transaction">C1. SQLite occurrence upserts not batched in a transaction<a class="headerlink" href="#c1-sqlite-occurrence-upserts-not-batched-in-a-transaction" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:255-286</code>, called from <code>internal/serve/dispatch.go:64-69</code>, <code>internal/store/reindex.go:46-63</code></p>
+<p>Every <code>UpsertOccurrence</code> is its own implicit transaction → fsync per row in
+WAL mode. <code>dispatchRecurring</code> calls UpsertOccurrence in a loop after a series
+reconcile (potentially 260 times). The same is true of <code>Reindex</code>, which is
+the canonical "rebuild the cache" path and <em>should</em> be the place where this
+matters most. With 260 inserts × ~5ms WAL fsync = ~1.3s of pure I/O wait per
+reconcile, scaling linearly.</p>
+<p><strong>Fix:</strong> add <code>Store.UpsertOccurrencesTx(events []*model.Event, calendars
+[]string) error</code> that opens one tx, prepares one statement, executes in a
+loop, commits. <strong>Estimated impact: 5-10× speedup on reindex and reconcile-of-large-series.</strong></p>
+<h3 id="c2-dispatchevents-reads-the-file-three-times-for-one-changed-event">C2. <code>dispatchEvents</code> reads the file three times for one Changed event<a class="headerlink" href="#c2-dispatchevents-reads-the-file-three-times-for-one-changed-event" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/serve/dispatch.go:82-107</code></p>
+<p>For an external (non-self-write) Changed event in <code>events/</code>, the daemon does:
+1. <code>fcparse.Detect(path)</code> — full file read + YAML parse (just to read <code>type:</code>)
+2. <code>autoown.FlipIfNeeded(path)</code> — another full read, parse, possibly rewrite
+3. <code>model.ParseEvent(path)</code> — third full read + parse</p>
+<p>Three reads, three YAML parses, two <code>bufio.Scanner</code> 1MB buffer allocations
+per event. None of the intermediate results are passed forward.</p>
+<p><strong>Fix:</strong> parse once at the top of <code>dispatchEvents</code>, hand the parsed <code>*Event</code>
+to autoown (which gets a "set the flag" form taking an already-parsed
+event) and to UpsertOccurrence. Use a cheap <code>peekType</code> (read first ~512
+bytes) for <code>Detect</code>. <strong>Estimated impact: 3× reduction in CPU for events/
+events; 3× reduction in <code>splitFrontmatter</code> 1MB allocations.</strong></p>
+<h3 id="c3-splitfrontmatter-allocates-a-1mb-scanner-buffer-for-every-parse">C3. <code>splitFrontmatter</code> allocates a 1MB scanner buffer for every parse<a class="headerlink" href="#c3-splitfrontmatter-allocates-a-1mb-scanner-buffer-for-every-parse" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/model/parse.go:22</code>, <code>internal/fcparse/translate.go:225</code></p>
+<p><code>scanner.Buffer(make([]byte, 1024*1024), 16*1024*1024)</code> allocates 1MB up
+front per parse, even though the median event file is well under 4KB. With
+the M1/C2 fixes the call count drops dramatically; with this fix the
+per-call allocation drops too. There's also no need for a Scanner at all —
+<code>bytes.Cut(raw, []byte("\n---\n"))</code> (or simpler — index of <code>\n---\n</code> after
+header) is sufficient for the simple <code>---\n…\n---\n</code> format the codebase
+uses. Eliminates the <code>bufio.Scanner</code> and its buffer entirely.</p>
+<p><strong>Fix:</strong> rewrite <code>splitFrontmatter</code> as direct byte-slice manipulation. <strong>Estimated
+impact: 1MB saved per parse, faster cold path; ~30 lines simpler.</strong></p>
+<h3 id="c4-fcparsesplitfrontmatter-is-a-copy-paste-of-modelsplitfrontmatter">C4. <code>fcparse.splitFrontmatter</code> is a copy-paste of <code>model.splitFrontmatter</code><a class="headerlink" href="#c4-fcparsesplitfrontmatter-is-a-copy-paste-of-modelsplitfrontmatter" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/fcparse/translate.go:223-258</code> vs <code>internal/model/parse.go:20-56</code></p>
+<p>Identical code. Either export the model version or move both to a shared
+internal helper. Combined with C3 above this is one function, ~15 lines.</p>
+<h3 id="c5-fcparsedetect-reads-the-entire-file-just-to-check-type">C5. <code>fcparse.Detect</code> reads the entire file just to check <code>type:</code><a class="headerlink" href="#c5-fcparsedetect-reads-the-entire-file-just-to-check-type" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/fcparse/translate.go:17-31</code></p>
+<p>Called on every Changed event in <code>events/</code>. Reads the whole file, splits
+frontmatter, runs full YAML unmarshal into a <code>typeProbe{Type string}</code>. For
+the common case (file is <code>type: single</code>) we want to bail in microseconds.</p>
+<p><strong>Fix:</strong> read the first 512 bytes; line-scan for <code>^type:\s*(\w+)</code>; bail. Falls
+back to full parse only on ambiguous input. <strong>Estimated impact: 50× speedup on the hot
+"Detect → not recurring → fallthrough" path.</strong></p>
+<h3 id="c6-nightly-reconcile-doesnt-refresh-occurrences-in-store">C6. Nightly reconcile doesn't refresh occurrences in store<a class="headerlink" href="#c6-nightly-reconcile-doesnt-refresh-occurrences-in-store" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/serve/nightly.go:24-35</code></p>
+<p>Loops every root, calls <code>reconcile.Series</code> (which writes new event files but
+<em>doesn't</em> upsert them into the store), then calls <code>UpsertSeries</code>. Newly
+created occurrences are absent from the store until the watcher emits an
+event for them, but the watcher will see those as self-writes and suppress
+them — so the store can drift silently for new horizon-extension occurrences.
+This isn't a perf issue per se, but a correctness gap; fixing it (call
+<code>UpsertOccurrence</code> for each rep.Created/Updated event the reconciler returns)
+also folds into the C1 transaction win.</p>
+<hr />
+<h2 id="simplification-opportunities">Simplification opportunities<a class="headerlink" href="#simplification-opportunities" title="Permanent link">&para;</a></h2>
+<h3 id="s1-drop-loadeventsforseries-its-a-workaround-for-not-querying-the-cache">S1. Drop <code>LoadEventsForSeries</code> — it's a workaround for not querying the cache<a class="headerlink" href="#s1-drop-loadeventsforseries-its-a-workaround-for-not-querying-the-cache" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/series/series.go:67-94</code></p>
+<p>Once the store is the source of truth for what's expanded (it already is —
+<code>UpsertOccurrence</code> is called on every write), there's no reason to walk the
+disk and re-parse YAML. Replace with <code>Store.ListOccurrencesBySeries(seriesID)</code>
+returning <code>[]*model.Event</code>. ~40 lines of file walking + parsing → ~15 lines
+of SQL. Pairs with M1.</p>
+<h3 id="s2-three-calendarfrompath-copies">S2. Three <code>calendarFromPath</code> copies<a class="headerlink" href="#s2-three-calendarfrompath-copies" title="Permanent link">&para;</a></h3>
+<p><strong>Files:</strong> <code>internal/serve/dispatch.go:182-192</code>, <code>internal/store/reindex.go:67-77</code>,
+<code>internal/reactor/reactor.go:140-150</code>, <code>internal/archive/archive.go:84-94</code></p>
+<p>Same 11-line function, four copies. Move to <code>vault.CalendarFromPath</code>.
+~30 lines deleted.</p>
+<h3 id="s3-notifyregistry-is-a-singleton-in-a-package-accessed-via-package-level">S3. <code>notify.registry</code> is a singleton in a package, accessed via package-level<a class="headerlink" href="#s3-notifyregistry-is-a-singleton-in-a-package-accessed-via-package-level" title="Permanent link">&para;</a></h3>
+<p>mutex + globals
+<strong>File:</strong> <code>internal/notify/registry.go</code></p>
+<p>Used by exactly one caller (the scheduler in <code>serve</code>). The registry pattern
+makes sense for plug-in discovery; here, the daemon code constructs both
+backends (<code>system</code>, <code>ntfy</code>) inline and registers them. Inlining as a
+<code>map[string]Backend</code> field on <code>Scheduler</code> would drop the global state, the
+<code>Reset()</code> test hatch, and the package-level mutex. ~50 lines simpler.</p>
+<h3 id="s4-scanseries-partially-duplicated-in-listseries-getseriesbypath">S4. <code>scanSeries</code> partially duplicated in <code>ListSeries</code> / <code>GetSeriesByPath</code><a class="headerlink" href="#s4-scanseries-partially-duplicated-in-listseries-getseriesbypath" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:184-249, 465-488</code></p>
+<p><code>scanSeries</code> exists for <code>*sql.Row</code>, but the same logic is hand-rolled twice
+more for <code>*sql.Rows</code> callers. Extract a single scanner taking a
+<code>Scanner interface{ Scan(...interface{}) error }</code> and use everywhere. ~30
+lines deleted.</p>
+<h3 id="s5-notification-struct-carries-event-metadata-that-backends-dont-use">S5. <code>Notification</code> struct carries event metadata that backends don't use<a class="headerlink" href="#s5-notification-struct-carries-event-metadata-that-backends-dont-use" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/notify/types.go:22-40</code></p>
+<p><code>EventTitle</code>/<code>EventDate</code>/<code>EventStart</code>/<code>EventEnd</code>/<code>EventPath</code>/<code>Calendar</code>/<code>Lead</code>
+are populated for the action runner, then handed to every backend's <code>Send</code>,
+which only reads <code>Title</code>/<code>Body</code>/<code>Tags</code>. Either split <code>Notification</code> from
+<code>ActionContext</code>, or just pass <code>*Event</code> to the action runner directly. ~20
+lines, plus clearer intent.</p>
+<h3 id="s6-serve-options-struct-is-a-2-field-bag">S6. Serve options struct is a 2-field bag<a class="headerlink" href="#s6-serve-options-struct-is-a-2-field-bag" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/serve/serve.go:22-25</code></p>
+<p><code>Options{Vault, Store}</code> is passed everywhere. Either inline the args or fold
+the daemon into a small struct (<code>type daemon struct { v *vault.Vault; s
+*store.Store }</code>) and make <code>dispatch</code>/<code>runNightly</code> methods. The current shape
+is mid-way between procedural and OO and pays the cost of both.</p>
+<h3 id="s7-backend-interface-is-one-method-send-plus-name">S7. <code>Backend</code> interface is one method (<code>Send</code>) plus <code>Name</code><a class="headerlink" href="#s7-backend-interface-is-one-method-send-plus-name" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/notify/types.go:42-49</code></p>
+<p>This is fine, but the <code>Name()</code> method exists only because the registry uses
+it as a map key. Drop the registry (S3) and the interface becomes
+<code>type Sender interface { Send(ctx, n) error }</code>. Backends become plain
+struct values stored in the scheduler.</p>
+<hr />
+<h2 id="resource-lifecycle">Resource lifecycle<a class="headerlink" href="#resource-lifecycle" title="Permanent link">&para;</a></h2>
+<h3 id="r1-actionsrunner-goroutines-are-not-waited-on-at-shutdown">R1. <code>actions.Runner</code> goroutines are not waited on at shutdown<a class="headerlink" href="#r1-actionsrunner-goroutines-are-not-waited-on-at-shutdown" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/notify/scheduler.go:209-216</code></p>
+<p><code>go func() { sc.actions.Run(ctx, ...) }()</code> is fired and forgotten. On daemon
+shutdown (ctx cancellation) these goroutines exit when their action
+completes — but if an action is stuck on a slow GUI launcher (the comment
+warns 30s+), shutdown hangs invisibly until that goroutine returns. No
+WaitGroup, no shutdown grace period, no logging.</p>
+<p><strong>Fix:</strong> <code>sync.WaitGroup</code> in the scheduler; on Run return, wait up to a
+short grace (5s) before letting the daemon exit. Or accept the leak and log
+it.</p>
+<h3 id="r2-watcher-events-channel-buffer-is-64-no-backpressure-handling">R2. Watcher <code>events</code> channel buffer is 64; no backpressure handling<a class="headerlink" href="#r2-watcher-events-channel-buffer-is-64-no-backpressure-handling" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/watch/watch.go:107</code></p>
+<p>During a 260-event fanout the <code>events</code> channel can fill faster than dispatch
+drains. The send is wrapped in a select with <code>&lt;-w.done</code>, so the timer
+goroutine just gives up — events get <em>silently dropped</em>. Better to either
+size the channel for the worst case or block-with-warning.</p>
+<p><strong>Fix:</strong> raise buffer to ~1024 or block on send (the timer goroutine pool
+isn't unbounded — <code>time.AfterFunc</code> runs each on its own runtime-managed
+goroutine, and dropping events corrupts the cache).</p>
+<h3 id="r3-pendingmu-locked-timer-leaks-on-stop-if-flushpending-runs">R3. <code>pendingMu</code>-locked timer leaks on <code>Stop</code> if <code>flushPending</code> runs<a class="headerlink" href="#r3-pendingmu-locked-timer-leaks-on-stop-if-flushpending-runs" title="Permanent link">&para;</a></h3>
+<p>concurrently with raw events
+<strong>File:</strong> <code>internal/watch/watch.go:288-296</code></p>
+<p><code>flushPending</code> stops timers and closes the events channel, but raw fsnotify
+events arriving in the same select-loop iteration can still call <code>enqueue</code>
+(which holds <code>pendingMu</code>). Closing the events channel while a <code>fire</code>
+goroutine might still try to send on it would panic. The current code
+threads through <code>&lt;-w.done</code> in the fire's select, so it's <em>probably</em> safe,
+but the ordering is fragile.</p>
+<p><strong>Fix:</strong> drain the timer goroutines explicitly via WaitGroup before closing
+<code>events</code>.</p>
+<h3 id="r4-selfwrites-map-has-no-upper-bound-no-proactive-prune-also-m5">R4. <code>selfWrites</code> map has no upper bound + no proactive prune (also M5)<a class="headerlink" href="#r4-selfwrites-map-has-no-upper-bound-no-proactive-prune-also-m5" title="Permanent link">&para;</a></h3>
+<p>See M5.</p>
+<h3 id="r5-sqlite-connection-has-no-setmaxopenconnssetconnmaxidletime">R5. SQLite connection has no <code>SetMaxOpenConns</code>/<code>SetConnMaxIdleTime</code><a class="headerlink" href="#r5-sqlite-connection-has-no-setmaxopenconnssetconnmaxidletime" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:35-38</code></p>
+<p><code>sql.Open</code> returns the default <code>*sql.DB</code>, which keeps an unbounded pool of
+idle connections. For SQLite the pool should be 1 (writes serialise anyway)
+to avoid <code>database is locked</code> errors during bulk operations. This is a
+correctness bug in disguise: under fanout the daemon may currently be
+silently retrying or returning errors to the dispatch path.</p>
+<p><strong>Fix:</strong> <code>db.SetMaxOpenConns(1)</code> after <code>sql.Open</code>. One line. Eliminates a
+class of errors.</p>
+<hr />
+<h2 id="sqlite">Sqlite<a class="headerlink" href="#sqlite" title="Permanent link">&para;</a></h2>
+<h3 id="q1-no-bulk-insert-path-covered-in-c1">Q1. No bulk-insert path (covered in C1)<a class="headerlink" href="#q1-no-bulk-insert-path-covered-in-c1" title="Permanent link">&para;</a></h3>
+<p>See C1. The single biggest sqlite win.</p>
+<h3 id="q2-isfired-is-a-select-count-instead-of-select-1-limit-1">Q2. <code>IsFired</code> is a <code>SELECT COUNT(*)</code> instead of <code>SELECT 1 ... LIMIT 1</code><a class="headerlink" href="#q2-isfired-is-a-select-count-instead-of-select-1-limit-1" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:417-428</code></p>
+<p>For a unique-key existence check, <code>COUNT(*)</code> walks all matching rows (here
+only ever zero or one due to PK) — but the query planner has to confirm
+that. Change to <code>SELECT 1 FROM notify_fired WHERE ... LIMIT 1</code>, scan into
+an int, check <code>err == sql.ErrNoRows</code>. Trivial; tightens the hot scheduler
+path.</p>
+<p><strong>Estimated impact: small (microseconds), but called once per notify rule
+per event per tick — adds up under sustained notification load.</strong></p>
+<h3 id="q3-notify_fired-has-no-composite-index-for-the-dedupe-lookup">Q3. <code>notify_fired</code> has no composite index for the dedupe lookup<a class="headerlink" href="#q3-notify_fired-has-no-composite-index-for-the-dedupe-lookup" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:92-100</code></p>
+<p>The PRIMARY KEY <code>(event_path, notify_index, fire_at_planned)</code> covers the
+<code>IsFired</code> query directly — actually fine. But the only secondary index is
+on <code>event_path</code> alone, used by no current query. Drop it; saves a few KB
+and write time.</p>
+<h3 id="q4-upsertseries-json-marshals-bydaybymonthdayexceptions-even-when">Q4. <code>UpsertSeries</code> JSON-marshals <code>byday/bymonthday/exceptions</code> even when<a class="headerlink" href="#q4-upsertseries-json-marshals-bydaybymonthdayexceptions-even-when" title="Permanent link">&para;</a></h3>
+<p>unchanged
+<strong>File:</strong> <code>internal/store/store.go:128-163</code></p>
+<p>Every <code>UpsertSeries</code> re-serialises the same arrays. For nightly's "loop
+every root, upsert series" path that's a measurable per-series cost. Skip
+the JSON marshal if the existing row's column matches (cheap pre-check).
+Or just batch the nightly loop in a tx (C1 again).</p>
+<h3 id="q5-listupcomingwithnotify-returns-rows-that-get-filtered-out-in-go">Q5. <code>ListUpcomingWithNotify</code> returns rows that get filtered out in Go<a class="headerlink" href="#q5-listupcomingwithnotify-returns-rows-that-get-filtered-out-in-go" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/store.go:341-412</code></p>
+<p>The query coarse-filters by date+all_day+notify_json-not-null, then the
+loop drops events whose start_time falls outside [from, to]. In a year
+with thousands of upcoming events this is fine; at 10x scale a function-
+SQL filter would help. Not a current-scale issue — flag for v2.</p>
+<h3 id="q6-wipe-followed-by-per-row-inserts-in-reindex-is-the-worst-case">Q6. <code>Wipe</code> followed by per-row inserts in <code>Reindex</code> is the worst case<a class="headerlink" href="#q6-wipe-followed-by-per-row-inserts-in-reindex-is-the-worst-case" title="Permanent link">&para;</a></h3>
+<p><strong>File:</strong> <code>internal/store/reindex.go:24-65</code></p>
+<p>Wipe + 1000 individual UpsertOccurrence calls during a <code>calemdar reindex</code>
+on a vault with 1000 events. Should be one <code>BEGIN; DELETE; INSERT...;
+INSERT...; COMMIT;</code> block. Pairs with C1.</p>
+<hr />
+<h2 id="top-5-wins-ranked">Top 5 wins, ranked<a class="headerlink" href="#top-5-wins-ranked" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong>M1 / S1</strong> — replace <code>LoadEventsForSeries</code> with a SQLite query against
+   <code>occurrences</code>. Single biggest change. Drops the 1.1GB peak by 600+ MB and
+   ~10× wall-clock on reconcile of large series.</li>
+<li><strong>C1</strong> — wrap UpsertOccurrence loops (reconcile + reindex) in transactions.
+   5-10× speedup on disk-bound paths.</li>
+<li><strong>C2</strong> — parse <code>events/</code> files once per Changed event instead of three
+   times. 3× CPU drop on every external edit.</li>
+<li><strong>C3 / C4</strong> — replace <code>bufio.Scanner</code> 1MB-buffer frontmatter splitter
+   with <code>bytes</code> lookup, deduplicate the two copies. Big allocation reduction
+   under fanout, simpler code.</li>
+<li><strong>R5</strong> — <code>db.SetMaxOpenConns(1)</code>. One line. Plugs a latent
+   "database is locked" hazard under fanout.</li>
+</ol>
+<h2 id="the-11gb-peak-smoking-gun">The 1.1GB-peak smoking gun<a class="headerlink" href="#the-11gb-peak-smoking-gun" title="Permanent link">&para;</a></h2>
+<p>A 260-event fanout makes the daemon do these things, in this order:</p>
+<ol>
+<li>The user write to a single root triggers <code>dispatchRecurring</code>.</li>
+<li><code>reconcile.Series</code> calls <code>LoadEventsForSeries</code> → <strong>walks every event in
+   the calendar, full ReadFile + bufio.Scanner with 1MB buffer + YAML
+   parse for each</strong>.</li>
+<li>Reconcile writes 260 event files, each via <code>WriteEvent</code> → 260
+   <code>os.WriteFile</code> + 260 <code>NotifySelf(path)</code> → 260 <code>os.Stat</code> calls.</li>
+<li>Each write fires fsnotify Create + Write events; <strong>most</strong> are suppressed,
+   but ones racing past the 3s window land in dispatch.</li>
+<li><code>dispatchRecurring</code> then calls <code>LoadEventsForSeries</code> AGAIN to refresh
+   the store — <strong>another full-tree walk + parse + 1MB buffer per file</strong>.</li>
+<li>Loops 260 UpsertOccurrence calls outside a transaction → 260 fsync waits
+   in WAL.</li>
+<li>Any leaked fsnotify events from step 4 trigger <code>dispatchEvents</code> →
+   <code>fcparse.Detect</code> (full read + parse) + <code>autoown.FlipIfNeeded</code> (full read</li>
+<li>parse + write) + <code>model.ParseEvent</code> (full read + parse) per leaked
+   event.</li>
+</ol>
+<p>The 1.1GB peak is the in-flight <code>bufio.Scanner</code> buffers (1MB × thousands of
+parse calls in flight before GC catches up) plus the in-memory <code>[]*Event</code>
+slices from the repeated full-tree walks. Go's GC will reclaim them quickly,
+but the live working set spikes to where Go pre-allocates a generous heap
+sizing for. With M1 + C1 + C3 fixes applied, the daemon's working set during
+the same fanout should stay under ~50MB.</p>
+<h2 id="one-simplification-if-i-had-to-ship-one">One simplification, if I had to ship one<a class="headerlink" href="#one-simplification-if-i-had-to-ship-one" title="Permanent link">&para;</a></h2>
+<p><strong>Delete <code>series.LoadEventsForSeries</code> entirely; query the SQLite cache
+instead</strong> (S1 + M1). It is the single change that:</p>
+<ul>
+<li>erases the 1.1GB-peak root cause,</li>
+<li>removes ~80 lines of file-walking + YAML-parsing code,</li>
+<li>enforces the architectural invariant that the store IS the projection
+  (right now the codebase reads it from disk in two places and from sqlite
+  in one — pick one, the sqlite one is faster and already exists).</li>
+</ul>
+<p>Three files touched (<code>series.go</code>, <code>store.go</code>, <code>dispatch.go</code>). Net delta
+likely negative-LOC.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/arch-err/calemdar" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.sections", "content.action.edit", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -780,6 +780,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#layer-4-sticky-event-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 4 — sticky event delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cli-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1146,6 +1157,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#layer-4-sticky-event-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 4 — sticky event delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#cli-surface" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1484,15 +1506,36 @@ because deletes erase the inode, leaving nothing to stat afterwards.</p>
   immediately, fsnotify fires again and we restore again. We don't loop
   internally and we don't try to outpace a sync conflict.</li>
 </ul>
+<h3 id="layer-4-sticky-event-delete">Layer 4 — sticky event delete<a class="headerlink" href="#layer-4-sticky-event-delete" title="Permanent link">&para;</a></h3>
+<p>Deleting an expanded occurrence in obsidian (or on any synced peer) used
+to do nothing useful: the daemon dropped the cached row, but the next
+reconcile or <code>extend</code> recreated the file from the root. The user
+expected "delete = stay deleted".</p>
+<p>The dispatch path now:</p>
+<ol>
+<li>Captures the occurrence's <code>series_id</code> + <code>date</code> from sqlite before
+   dropping the row (the file is already gone — fsnotify fires after
+   the delete syscall).</li>
+<li>If the row had a <code>series_id</code>, looks up the root.</li>
+<li>Appends the date to the root's <code>exceptions:</code> list (dedup), writes
+   the root with the self-write flag, runs reconcile inline, and
+   refreshes the snapshot.</li>
+</ol>
+<p>The exception sticks across all future reconciles, including the
+nightly horizon-extend pass on every device that runs the daemon. True
+one-offs (no <code>series_id</code>) just get the row drop — there's no root to
+update.</p>
 <h3 id="cli-surface">CLI surface<a class="headerlink" href="#cli-surface" title="Permanent link">&para;</a></h3>
 <ul>
-<li><code>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]</code> — proper
-  cleanup: backup → optional event cascade → file remove (with
+<li><code>calemdar recurring list</code> — show active series.</li>
+<li><code>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events] [-l]</code> —
+  proper cleanup: backup → optional event cascade → file remove (with
   self-delete flag) → sqlite cleanup. Past events are never touched;
-  user-owned events are preserved even with <code>--purge-events</code>.</li>
-<li><code>calemdar recurring restore &lt;slug&gt;</code> — re-materialises the most recent
-  backup as <code>recurring/&lt;slug&gt;.md</code>. Refuses to overwrite.</li>
-<li><code>calemdar recurring backup-list</code> — inventory.</li>
+  user-owned events are preserved even with <code>--purge-events</code>. <code>-l</code>
+  lists deletable series.</li>
+<li><code>calemdar recurring restore &lt;slug&gt; [-l]</code> — re-materialises the most
+  recent backup as <code>recurring/&lt;slug&gt;.md</code>. Refuses to overwrite. <code>-l</code>
+  lists available backups.</li>
 </ul>
 <h3 id="what-this-does-not-solve">What this does NOT solve<a class="headerlink" href="#what-this-does-not-solve" title="Permanent link">&para;</a></h3>
 <ul>
