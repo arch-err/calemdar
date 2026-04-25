@@ -129,6 +129,12 @@ func (sc *Scheduler) tick(ctx context.Context, now time.Time) {
 	for _, row := range rows {
 		startTs, ok := parseEventStart(row.Event, loc)
 		if !ok {
+			// Malformed event date/time. The store row exists, the
+			// scheduler can't compute a fire_at — log so the user can
+			// notice, then skip. Without this the event silently never
+			// fires and the user has no diagnostic.
+			log.Printf("notify: skipping %s — bad start (date=%q time=%q)",
+				row.Event.Path, row.Event.Date, row.Event.StartTime)
 			continue
 		}
 		for i, rule := range row.Event.Notify {

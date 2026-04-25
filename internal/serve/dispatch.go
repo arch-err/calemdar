@@ -186,7 +186,20 @@ func handleRecurringDelete(opts Options, path string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("recurring restore: mkdir: %w", err)
 	}
-	if err := os.WriteFile(path, []byte(r.RawSource), 0o644); err != nil {
+	// Preserve the original file mode if we can recover it from a
+	// neighbour or from the parent dir; otherwise fall back to 0o644.
+	// We don't have a stat of the deleted file (it's gone), so this is
+	// best-effort.
+	mode := os.FileMode(0o644)
+	if dirInfo, derr := os.Stat(filepath.Dir(path)); derr == nil {
+		// Strip dir-only bits from the parent's mode. Files don't get
+		// the executable bit unless something explicitly requests it.
+		mode = (dirInfo.Mode() & 0o666) | 0o600
+		if mode == 0 {
+			mode = 0o644
+		}
+	}
+	if err := os.WriteFile(path, []byte(r.RawSource), mode); err != nil {
 		return fmt.Errorf("recurring restore: write: %w", err)
 	}
 	// The follow-up CREATE will land back here as Changed, which will
