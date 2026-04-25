@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -71,12 +72,28 @@ func dispatchRecurring(opts Options, ev watch.Event) error {
 }
 
 // dispatchEvents handles changes to files in events/.
-//   - Deleted: remove from store.
+//   - Deleted: drop the store row and, if the occurrence belonged to a
+//     series, append its date to the root's `exceptions:` so reconcile
+//     (live + nightly) won't recreate it. Sticky cross-device delete.
 //   - Changed + FC recurring/rrule: migrate via reactor.
 //   - Changed + other: auto-flip user-owned, upsert in store.
 func dispatchEvents(opts Options, ev watch.Event) error {
 	if ev.Kind == watch.Deleted {
-		return opts.Store.DeleteOccurrence(ev.Path)
+		// Capture metadata before dropping the row — the file is gone so
+		// we can't re-parse it, but the cache still holds series_id + date.
+		occ, oerr := opts.Store.GetOccurrenceByPath(ev.Path)
+		if oerr != nil {
+			log.Printf("serve: lookup before delete %s: %v", ev.Path, oerr)
+		}
+		if err := opts.Store.DeleteOccurrence(ev.Path); err != nil {
+			return err
+		}
+		if occ != nil && occ.SeriesID != "" {
+			if err := stickyDeleteAddException(opts, occ); err != nil {
+				log.Printf("serve: sticky-delete %s: %v", ev.Path, err)
+			}
+		}
+		return nil
 	}
 
 	kind, err := fcparse.Detect(ev.Path)
@@ -175,6 +192,51 @@ func handleRecurringDelete(opts Options, path string) error {
 	// Tell the watcher this write is ours so we don't loop on the
 	// reconcile path either.
 	writer.NotifySelf(path)
+	return nil
+}
+
+// stickyDeleteAddException records the deleted occurrence's date as an
+// exception on its series root. Implements sync-resilient delete: an
+// occurrence removed in obsidian on any peer ends up here as a DELETE
+// event — we update the root once, future reconciles (live + nightly)
+// honour the exception, and the deletion sticks across all devices.
+//
+// No-ops if the series root has been deleted as well, or if the date is
+// already in the exceptions list. Writes the root with the self-write
+// flag so the watcher doesn't bounce the change back through
+// dispatchRecurring; reconcile + store upsert are run inline.
+func stickyDeleteAddException(opts Options, occ *model.Event) error {
+	r, err := series.FindByIDOrSlug(opts.Vault, occ.SeriesID)
+	if err != nil {
+		return err
+	}
+	if r == nil {
+		// Series root is gone too — nothing to update. The root-delete
+		// path handles its own cleanup.
+		return nil
+	}
+	for _, ex := range r.Exceptions {
+		if ex == occ.Date {
+			return nil
+		}
+	}
+	r.Exceptions = append(r.Exceptions, occ.Date)
+	sort.Strings(r.Exceptions)
+
+	if err := writer.WriteRoot(r); err != nil {
+		return fmt.Errorf("write root: %w", err)
+	}
+
+	rep, err := reconcile.Series(opts.Vault, r)
+	if err != nil {
+		return fmt.Errorf("reconcile after exception: %w", err)
+	}
+	log.Printf("serve: sticky-delete %s on %s — reconciled (in-plan=%d created=%d swept=%d)",
+		occ.Date, r.Slug, rep.InPlan, rep.Created, rep.Swept)
+
+	if err := opts.Store.UpsertSeries(r); err != nil {
+		return fmt.Errorf("store upsert series: %w", err)
+	}
 	return nil
 }
 

@@ -291,6 +291,34 @@ func (s *Store) DeleteOccurrence(path string) error {
 	return err
 }
 
+// GetOccurrenceByPath returns the cached row for path, or nil if not
+// present. Used by the sticky-delete dispatch path: the file is gone by
+// the time fsnotify fires, so we look the metadata up from the cache
+// before dropping the row.
+func (s *Store) GetOccurrenceByPath(path string) (*model.Event, error) {
+	row := s.db.QueryRow(`SELECT path, series_id, date, title,
+		start_time, end_time, all_day, user_owned, expanded_at
+		FROM occurrences WHERE path = ?`, path)
+	var e model.Event
+	var seriesID, startTime, endTime, expandedAt sql.NullString
+	var allDay, userOwned int
+	if err := row.Scan(&e.Path, &seriesID, &e.Date, &e.Title,
+		&startTime, &endTime, &allDay, &userOwned, &expandedAt); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	e.SeriesID = seriesID.String
+	e.StartTime = startTime.String
+	e.EndTime = endTime.String
+	e.AllDay = allDay != 0
+	e.UserOwned = userOwned != 0
+	e.SeriesExpandedAt = expandedAt.String
+	e.Type = "single"
+	return &e, nil
+}
+
 // ListOccurrencesInRange returns occurrences with from <= date <= to.
 // Dates are YYYY-MM-DD strings (lexicographic comparison is correct).
 func (s *Store) ListOccurrencesInRange(from, to string) ([]*model.Event, error) {

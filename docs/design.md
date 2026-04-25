@@ -310,15 +310,39 @@ When fsnotify fires DELETE on `<base>/recurring/<slug>.md`:
   immediately, fsnotify fires again and we restore again. We don't loop
   internally and we don't try to outpace a sync conflict.
 
+### Layer 4 — sticky event delete
+
+Deleting an expanded occurrence in obsidian (or on any synced peer) used
+to do nothing useful: the daemon dropped the cached row, but the next
+reconcile or `extend` recreated the file from the root. The user
+expected "delete = stay deleted".
+
+The dispatch path now:
+
+1. Captures the occurrence's `series_id` + `date` from sqlite before
+   dropping the row (the file is already gone — fsnotify fires after
+   the delete syscall).
+2. If the row had a `series_id`, looks up the root.
+3. Appends the date to the root's `exceptions:` list (dedup), writes
+   the root with the self-write flag, runs reconcile inline, and
+   refreshes the snapshot.
+
+The exception sticks across all future reconciles, including the
+nightly horizon-extend pass on every device that runs the daemon. True
+one-offs (no `series_id`) just get the row drop — there's no root to
+update.
+
 ### CLI surface
 
-- `calemdar recurring delete <id-or-slug> [--purge-events]` — proper
-  cleanup: backup → optional event cascade → file remove (with
+- `calemdar recurring list` — show active series.
+- `calemdar recurring delete <id-or-slug> [--purge-events] [-l]` —
+  proper cleanup: backup → optional event cascade → file remove (with
   self-delete flag) → sqlite cleanup. Past events are never touched;
-  user-owned events are preserved even with `--purge-events`.
-- `calemdar recurring restore <slug>` — re-materialises the most recent
-  backup as `recurring/<slug>.md`. Refuses to overwrite.
-- `calemdar recurring backup-list` — inventory.
+  user-owned events are preserved even with `--purge-events`. `-l`
+  lists deletable series.
+- `calemdar recurring restore <slug> [-l]` — re-materialises the most
+  recent backup as `recurring/<slug>.md`. Refuses to overwrite. `-l`
+  lists available backups.
 
 ### What this does NOT solve
 

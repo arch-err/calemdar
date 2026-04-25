@@ -146,6 +146,176 @@ func TestExternalDeleteWithoutSnapshotIsNoop(t *testing.T) {
 	}
 }
 
+// TestStickyDeleteAppendsExceptionToRoot exercises the sticky-delete
+// path: a series-bound event file is removed, dispatch picks up the
+// DELETE, and the root's `exceptions:` list grows to include the date.
+// Future reconciles must skip the date.
+func TestStickyDeleteAppendsExceptionToRoot(t *testing.T) {
+	v, s := setup(t)
+	r := snapshotRoot(t, v, s, "workout", sampleRoot)
+
+	// Seed an expanded occurrence in the store + on disk.
+	loc := model.Location()
+	date := model.Today(loc).AddDate(0, 0, 14).Format("2006-01-02")
+	eventPath := v.EventPath("health", date, "workout")
+	if err := os.MkdirAll(filepath.Dir(eventPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	occContent := `---
+title: Workout
+date: "` + date + `"
+startTime: "10:00"
+endTime: "11:00"
+allDay: false
+type: single
+series-id: 11111111-1111-7111-8111-111111111111
+user-owned: false
+---
+
+body
+`
+	if err := os.WriteFile(eventPath, []byte(occContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	occ, err := model.ParseEvent(eventPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := s.UpsertOccurrence(occ, "health"); err != nil {
+		t.Fatal(err)
+	}
+
+	// User deletes the file (e.g. obsidian on phone, syncthing pushes here).
+	if err := os.Remove(eventPath); err != nil {
+		t.Fatal(err)
+	}
+
+	ev := watch.Event{Kind: watch.Deleted, Source: watch.SourceEvents, Path: eventPath}
+	if err := dispatch(Options{Vault: v, Store: s}, ev); err != nil {
+		t.Fatalf("dispatch: %v", err)
+	}
+
+	// Store row dropped.
+	got, err := s.GetOccurrenceByPath(eventPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != nil {
+		t.Errorf("expected store row gone, got %+v", got)
+	}
+
+	// Root file now carries the exception.
+	rerolled, err := model.ParseRoot(r.Path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, ex := range rerolled.Exceptions {
+		if ex == date {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("date %s not in exceptions: %v", date, rerolled.Exceptions)
+	}
+}
+
+// TestStickyDeleteIdempotent runs the delete dispatch twice on the same
+// path. Second run must not duplicate the date in exceptions.
+func TestStickyDeleteIdempotent(t *testing.T) {
+	v, s := setup(t)
+	_ = snapshotRoot(t, v, s, "workout", sampleRoot)
+
+	loc := model.Location()
+	date := model.Today(loc).AddDate(0, 0, 21).Format("2006-01-02")
+	eventPath := v.EventPath("health", date, "workout")
+	if err := os.MkdirAll(filepath.Dir(eventPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	occContent := `---
+title: Workout
+date: "` + date + `"
+startTime: "10:00"
+endTime: "11:00"
+allDay: false
+type: single
+series-id: 11111111-1111-7111-8111-111111111111
+user-owned: false
+---
+
+body
+`
+	if err := os.WriteFile(eventPath, []byte(occContent), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	occ, _ := model.ParseEvent(eventPath)
+	_ = s.UpsertOccurrence(occ, "health")
+
+	if err := os.Remove(eventPath); err != nil {
+		t.Fatal(err)
+	}
+	ev := watch.Event{Kind: watch.Deleted, Source: watch.SourceEvents, Path: eventPath}
+	for i := 0; i < 3; i++ {
+		_ = dispatch(Options{Vault: v, Store: s}, ev) // second/third are no-ops
+	}
+
+	rerolled, err := model.ParseRoot(filepath.Join(v.RecurringDir(), "workout.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	count := 0
+	for _, ex := range rerolled.Exceptions {
+		if ex == date {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Errorf("expected exactly 1 occurrence of %s in exceptions, got %d (full list: %v)",
+			date, count, rerolled.Exceptions)
+	}
+}
+
+// TestStickyDeleteOneOffNoExceptionWritten exercises a delete on an
+// event with no series_id (true one-off). The store row drops, no root
+// is touched.
+func TestStickyDeleteOneOffNoExceptionWritten(t *testing.T) {
+	v, s := setup(t)
+	eventPath := filepath.Join(v.EventsDir(), "health", "2026-05-04-oneoff.md")
+	if err := os.MkdirAll(filepath.Dir(eventPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(eventPath, []byte(`---
+title: oneoff
+date: "2026-05-04"
+startTime: "10:00"
+endTime: "11:00"
+allDay: false
+type: single
+user-owned: true
+---
+`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	occ, _ := model.ParseEvent(eventPath)
+	if err := s.UpsertOccurrence(occ, "health"); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.Remove(eventPath); err != nil {
+		t.Fatal(err)
+	}
+	ev := watch.Event{Kind: watch.Deleted, Source: watch.SourceEvents, Path: eventPath}
+	if err := dispatch(Options{Vault: v, Store: s}, ev); err != nil {
+		t.Fatal(err)
+	}
+	// Just confirm nothing exploded; the only side effect is the row drop.
+	got, _ := s.GetOccurrenceByPath(eventPath)
+	if got != nil {
+		t.Errorf("expected store row dropped, got %+v", got)
+	}
+}
+
 func TestRestoreSurfacesBodyVerbatim(t *testing.T) {
 	// The whole file is the snapshot, including frontmatter quirks.
 	v, s := setup(t)
