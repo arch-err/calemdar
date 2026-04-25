@@ -636,13 +636,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notifications-deferred" class="md-nav__link">
+  <a href="#notifications-v1-minimal-in-daemon" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notifications (deferred)
+        Notifications (v1: minimal, in-daemon)
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Notifications (v1: minimal, in-daemon)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#next-rich-notification-system-designed-not-yet-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next: rich notification system (designed, not yet built)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -869,13 +886,30 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notifications-deferred" class="md-nav__link">
+  <a href="#notifications-v1-minimal-in-daemon" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notifications (deferred)
+        Notifications (v1: minimal, in-daemon)
       
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="Notifications (v1: minimal, in-daemon)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#next-rich-notification-system-designed-not-yet-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next: rich notification system (designed, not yet built)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1040,19 +1074,24 @@ The cache exists to make lookups fast. If deleted, the server rebuilds it.</p>
 </code></pre></div>
 <h2 id="cli-surface-v1">CLI surface (v1)<a class="headerlink" href="#cli-surface-v1" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calemdar serve                     # run the watcher + nightly timers
-<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>calemdar reindex                   # rebuild SQLite from disk
-<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>calemdar expand &lt;series-id&gt;        # force-expand a single series
-<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>calemdar extend                    # extend the 12mo horizon for all series
-<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>calemdar archive                   # archive events older than 6 months
-<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>
-<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>calemdar event new                 # create a one-off event interactively
-<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>calemdar event list [--range=today|week|month|...]
-<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>calemdar event show &lt;path&gt;
-<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
-<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>calemdar series new                # create a recurring root interactively
-<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>calemdar series list
-<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>calemdar series show &lt;id-or-slug&gt;
-<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>calemdar series except &lt;id&gt; &lt;date&gt; # add to exceptions list
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>calemdar setup                     # scaffold vault folders (idempotent)
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>calemdar reindex                   # rebuild SQLite from disk
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>calemdar reactor                   # one-shot scan for FC-authored recurring events
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>calemdar expand &lt;id-or-slug&gt;       # force-expand a single series
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>calemdar extend                    # extend the 12mo horizon for all series
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>calemdar archive                   # archive events older than 6 months
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>calemdar event new                 # create a one-off event interactively
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>calemdar event list [--range=today|week|month|all]
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>calemdar event show &lt;path&gt;
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>calemdar series new                # create a recurring root interactively
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>calemdar series list
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>calemdar series show &lt;id-or-slug&gt;
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>calemdar series except &lt;id&gt; &lt;date&gt; # add to exceptions list
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>calemdar config path|show|init|edit
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>calemdar notify test               # one-shot ntfy test push
 </code></pre></div>
 <h2 id="concurrency-sync">Concurrency / sync<a class="headerlink" href="#concurrency-sync" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1070,18 +1109,58 @@ The cache exists to make lookups fast. If deleted, the server rebuilds it.</p>
 <li><strong>Go.</strong> Single static binary. Embeds daemon + CLI. Low memory, fast startup,
   fsnotify stdlib-adjacent, <code>modernc.org/sqlite</code> for pure-Go SQLite, no CGO.</li>
 <li>Binary name: <code>calemdar</code>. Installed via <code>go install</code> or <code>just install</code>.</li>
-<li>Hosting: laptop for v1. Architecture is server-ready — move to the home
-  server when notifications land.</li>
+<li>Hosting: laptop for v1. Architecture is server-ready — moving to the
+  home server is a packaging exercise, not a redesign.</li>
 </ul>
-<h2 id="notifications-deferred">Notifications (deferred)<a class="headerlink" href="#notifications-deferred" title="Permanent link">&para;</a></h2>
+<h2 id="notifications-v1-minimal-in-daemon">Notifications (v1: minimal, in-daemon)<a class="headerlink" href="#notifications-v1-minimal-in-daemon" title="Permanent link">&para;</a></h2>
+<p>What shipped in v1 is intentionally small: a single ntfy backend, wired into
+<code>calemdar serve</code> as a goroutine, with a "test ping" CLI for preflighting the
+URL/topic. No multi-backend, no per-event opt-in, no action scripts — those
+land in the next iteration (see "Next" below).</p>
 <ul>
-<li>Not in v1.</li>
-<li>When added: a separate <code>calemdar-notify</code> binary reads the SQLite cache for
-  upcoming events in the next N minutes and pushes via ntfy (user's existing
-  channel). Runs via <code>systemd --user</code> timer, NOT the main daemon.</li>
-<li>No browser notifications. No per-event config. One ntfy topic, one lead-time
-  setting per calendar.</li>
+<li><strong>In-daemon, not a separate binary.</strong> Earlier sketches proposed a
+  <code>calemdar-notify</code> binary on a <code>systemd --user</code> timer; the real shape is
+  simpler: when <code>notifications.enabled</code> is true, <code>internal/serve</code> spawns
+  <code>internal/notify.Notifier</code> as a goroutine on startup. One process, one
+  ticker.</li>
+<li><strong>Backend: ntfy only.</strong> A 60-second ticker (<code>tickInterval</code>) queries the
+  store via <code>ListUpcoming</code> for non-all-day occurrences whose start time
+  falls inside <code>now + lead ± 30s</code> for each configured <code>lead_minutes</code> value
+  (default <code>[5, 60]</code>). Matches POST to <code>&lt;ntfy_url&gt;/&lt;ntfy_topic&gt;</code> with a
+  short body (<code>title — in Nm @ HH:MM–HH:MM</code>) and <code>Tags: calendar,&lt;cal&gt;</code>.</li>
+<li><strong>Single topic.</strong> One URL, one topic, optional per-calendar allow-list
+  via <code>notifications.calendars</code> (empty = all).</li>
+<li><strong>Dedupe.</strong> In-memory map keyed by <code>&lt;path&gt;|&lt;lead&gt;</code>; GC'd daily so the
+  same event-lead pair never fires twice. Lost on daemon restart — a
+  daemon restart inside a lead window can re-fire, by design (cheap and
+  acceptable for v1).</li>
+<li><strong>All-day skipped.</strong> No natural trigger time, no notification.</li>
+<li><strong>Preflight CLI:</strong> <code>calemdar notify test</code> POSTs a single canned message
+  regardless of <code>notifications.enabled</code> so the user can confirm wiring
+  before flipping the daemon switch on. Errors if URL/topic unset.</li>
+<li><strong>Config validation:</strong> when <code>enabled: true</code>, <code>ntfy_url</code> and <code>ntfy_topic</code>
+  are required; topic must match <code>^[A-Za-z0-9_-]{1,64}$</code>; lead-minutes
+  must be positive. Enforced in <code>config.Validate</code>.</li>
 </ul>
+<h3 id="next-rich-notification-system-designed-not-yet-built">Next: rich notification system (designed, not yet built)<a class="headerlink" href="#next-rich-notification-system-designed-not-yet-built" title="Permanent link">&para;</a></h3>
+<p>Planned for the iteration after v1, not in current code:</p>
+<ul>
+<li><strong>Multi-backend.</strong> Add a system-notifications backend (libnotify /
+  desktop notifications) alongside ntfy, selectable per route.</li>
+<li><strong>Per-event opt-in / opt-out.</strong> Frontmatter flag on events (and roots,
+  inheritable) to override the global notify policy. Today, every
+  non-all-day event in a watched calendar fires.</li>
+<li><strong>Pre-notifications / lead-time per route.</strong> Today every backend fires
+  on the same <code>lead_minutes</code> list. The next iteration lets each route
+  define its own lead-time policy (e.g. ntfy at <code>[5, 60]</code>, desktop at
+  <code>[15]</code>).</li>
+<li><strong>Action runner.</strong> Run a user-defined script on notification fire (or
+  on event start), with the event's frontmatter passed as env. Use case:
+  pre-meeting "open the agenda doc" or "join the call" automation.</li>
+<li><strong>Reload / reconfigure without daemon restart.</strong> Today the notifier
+  copies its config at start-up; rich version exposes a SIGHUP path.</li>
+</ul>
+<p>These are intentionally not in v1. Don't read the code expecting them.</p>
 <h2 id="ics-export-deferred-maybe-never">ICS export (deferred, maybe-never)<a class="headerlink" href="#ics-export-deferred-maybe-never" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Not in v1.</li>
