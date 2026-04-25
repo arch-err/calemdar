@@ -599,10 +599,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-delete-id-or-slug-purge-events" class="md-nav__link">
+  <a href="#calemdar-recurring-list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]
+        calemdar recurring list
       
     </span>
   </a>
@@ -610,10 +610,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-restore-slug" class="md-nav__link">
+  <a href="#calemdar-recurring-delete-id-or-slug-purge-events-l" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring restore &lt;slug&gt;
+        calemdar recurring delete [id-or-slug] [--purge-events] [-l]
       
     </span>
   </a>
@@ -621,10 +621,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-backup-list" class="md-nav__link">
+  <a href="#calemdar-recurring-restore-slug-l" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring backup-list
+        calemdar recurring restore [slug] [-l]
       
     </span>
   </a>
@@ -1107,10 +1107,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-delete-id-or-slug-purge-events" class="md-nav__link">
+  <a href="#calemdar-recurring-list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]
+        calemdar recurring list
       
     </span>
   </a>
@@ -1118,10 +1118,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-restore-slug" class="md-nav__link">
+  <a href="#calemdar-recurring-delete-id-or-slug-purge-events-l" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring restore &lt;slug&gt;
+        calemdar recurring delete [id-or-slug] [--purge-events] [-l]
       
     </span>
   </a>
@@ -1129,10 +1129,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#calemdar-recurring-backup-list" class="md-nav__link">
+  <a href="#calemdar-recurring-restore-slug-l" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar recurring backup-list
+        calemdar recurring restore [slug] [-l]
       
     </span>
   </a>
@@ -1402,7 +1402,13 @@ at <code>archive/</code>.</p>
 <p>Detailed view of one series — every frontmatter field plus the file path.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>calemdar<span class="w"> </span>series<span class="w"> </span>show<span class="w"> </span>workout
 </code></pre></div>
-<h3 id="calemdar-recurring-delete-id-or-slug-purge-events"><code>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]</code><a class="headerlink" href="#calemdar-recurring-delete-id-or-slug-purge-events" title="Permanent link">&para;</a></h3>
+<h3 id="calemdar-recurring-list"><code>calemdar recurring list</code><a class="headerlink" href="#calemdar-recurring-list" title="Permanent link">&para;</a></h3>
+<p>List every active recurring series. Same column shape as <code>series list</code>,
+exposed under <code>recurring</code> for one-stop discovery alongside the safeguard
+ops.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>list
+</code></pre></div>
+<h3 id="calemdar-recurring-delete-id-or-slug-purge-events-l"><code>calemdar recurring delete [id-or-slug] [--purge-events] [-l]</code><a class="headerlink" href="#calemdar-recurring-delete-id-or-slug-purge-events-l" title="Permanent link">&para;</a></h3>
 <p>Safe-delete a recurring root. Drops a backup copy under
 <code>&lt;vault&gt;/.calemdar/backup/recurring/&lt;slug&gt;-&lt;RFC3339-utc&gt;.md</code> (laptop-local,
 not synced), removes the root file with the self-delete flag set so the
@@ -1411,22 +1417,25 @@ watcher does NOT auto-restore, and clears the sqlite series row.</p>
 events for this series. Past events stay (archive-bound). User-owned
 events are always preserved — they stand on their own once the user has
 edited them.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout<span class="w"> </span>--purge-events
+<p>With <code>-l</code> (or <code>--list</code>), prints the deletable series and exits — same
+output as <code>recurring list</code>. Slug-less invocation without <code>-l</code> errors
+out with a usage hint.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>-l<span class="w">                       </span><span class="c1"># show what&#39;s deletable</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout<span class="w"> </span>--purge-events
 </code></pre></div>
-<h3 id="calemdar-recurring-restore-slug"><code>calemdar recurring restore &lt;slug&gt;</code><a class="headerlink" href="#calemdar-recurring-restore-slug" title="Permanent link">&para;</a></h3>
+<h3 id="calemdar-recurring-restore-slug-l"><code>calemdar recurring restore [slug] [-l]</code><a class="headerlink" href="#calemdar-recurring-restore-slug-l" title="Permanent link">&para;</a></h3>
 <p>Find the most recent backup matching <code>&lt;slug&gt;-*.md</code> under
 <code>&lt;vault&gt;/.calemdar/backup/recurring/</code> and copy it back to
 <code>recurring/&lt;slug&gt;.md</code>. Refuses to overwrite an existing root — move it
 out of the way first.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>restore<span class="w"> </span>workout
+<p>With <code>-l</code> (or <code>--list</code>), prints every backup grouped by slug, newest
+first. This replaces the older <code>backup-list</code> subcommand.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>restore<span class="w"> </span>-l<span class="w">                      </span><span class="c1"># show available backups</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>restore<span class="w"> </span>workout
 </code></pre></div>
-<p>The daemon (if running) will pick up the new file via fsnotify and
+<p>The daemon (if running) will pick up the restored file via fsnotify and
 reconcile. If you're running standalone, follow up with <code>calemdar reindex</code>.</p>
-<h3 id="calemdar-recurring-backup-list"><code>calemdar recurring backup-list</code><a class="headerlink" href="#calemdar-recurring-backup-list" title="Permanent link">&para;</a></h3>
-<p>List every recurring backup, grouped by slug, newest first.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>backup-list
-</code></pre></div>
 <h3 id="calemdar-series-except-id-or-slug-date"><code>calemdar series except &lt;id-or-slug&gt; &lt;date&gt;</code><a class="headerlink" href="#calemdar-series-except-id-or-slug-date" title="Permanent link">&para;</a></h3>
 <p>Add a date to the series' <code>exceptions</code> list and reconcile. The occurrence
 on that date is dropped (or swept if already materialised and not
