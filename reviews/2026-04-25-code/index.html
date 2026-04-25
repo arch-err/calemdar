@@ -1,0 +1,1397 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Recurring-event manager for Obsidian Full Calendar. Markdown as source of truth, server-expanded occurrences.">
+      
+      
+        <meta name="author" content="arch-err">
+      
+      
+        <link rel="canonical" href="https://arch-err.github.io/calemdar/reviews/2026-04-25-code/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Code Review — 2026-04-25 - calemdar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#code-review-2026-04-25" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="calemdar" class="md-header__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            calemdar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Code Review — 2026-04-25
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="calemdar" class="md-nav__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    calemdar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#critical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Critical">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#c1-scheduler-tick-advances-lasttick-even-on-store-query-failure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C1. Scheduler tick advances lastTick even on store-query failure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c2-dispatchevents-flips-user-owned-for-events-the-scheduler-is-mid-firing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C2. dispatchEvents flips user-owned for events the scheduler is mid-firing
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c3-selfwrites-map-grows-unbounded-no-janitor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C3. selfWrites map grows unbounded — no janitor
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c4-fires-action-goroutine-captures-ctx-which-is-the-per-tick-context" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C4. fire's action goroutine captures ctx, which is the per-tick context
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c5-runrecurringdelete-opens-the-store-after-the-file-delete" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C5. runRecurringDelete opens the store after the file delete
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#c6-listupcomingwithnotify-widens-the-sql-date-filter-by-1-day-but-doesnt-widen-for-tz-that-crosses-midnight-when-from-to-is-impossible" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        C6. ListUpcomingWithNotify widens the SQL date filter by ±1 day but doesn't widen for tz that crosses midnight when from &gt; to is impossible
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#important" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Important
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Important">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#i1-parseeventstart-silently-drops-events-whose-datetime-cant-parse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I1. parseEventStart silently drops events whose date+time can't parse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i2-recordfired-failure-does-not-block-send-double-fire-risk-on-restart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I2. recordFired failure does NOT block Send — double-fire risk on restart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i3-recordfired-writes-rfc3339-second-resolution-but-isfired-queries-the-same-key-sub-second-skew-loses-dedupe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I3. RecordFired writes RFC3339 (second resolution) but IsFired queries the same key — sub-second skew loses dedupe
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i4-handlerecurringdelete-writes-the-file-with-0o644-even-when-source-had-different-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I4. handleRecurringDelete writes the file with 0o644 even when source had different mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i5-addtree-swallows-errors-from-fsadd-for-newly-created-dirs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I5. addTree swallows errors from fs.Add for newly-created dirs
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i6-flushpending-closes-wevents-while-fire-may-still-be-writing-to-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I6. flushPending closes w.events while fire may still be writing to it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i7-enqueue-clobbers-the-original-source-classification-on-re-trigger" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I7. enqueue clobbers the original source classification on re-trigger
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i8-dispatchrecurring-re-loads-events-from-disk-after-every-reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I8. dispatchRecurring re-loads events from disk after every reconcile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i9-archiverun-calls-writernotifyselftarget-for-archive-tree-paths-that-arent-watched" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I9. archive.Run calls writer.NotifySelf(target) for archive-tree paths that aren't watched
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i10-reactormigrateone-calls-notifyself-on-the-original-path-after-the-file-is-removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I10. reactor.migrateOne calls NotifySelf on the original path AFTER the file is removed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i11-names-in-actionsrunner-has-unspecified-ordering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I11. Names() in actions.Runner has unspecified ordering
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i12-reload-swaps-cfg-but-doesnt-resize-the-semaphore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I12. Reload swaps cfg but doesn't resize the semaphore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i13-reset-is-documented-as-test-only-but-is-called-in-servestartscheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I13. Reset() is documented as test-only but is called in serve.startScheduler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i14-runrecurringdelete-doesnt-check-for-in-progress-watcher" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I14. runRecurringDelete doesn't check for in-progress watcher
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i15-splitfrontmatter-parsego-and-fcparse-is-duplicated-verbatim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I15. splitFrontmatter (parse.go and fcparse) is duplicated verbatim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i16-daysbetween-uses-intbsubahours-24-dst-disagreement" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I16. daysBetween uses int(b.Sub(a).Hours() / 24) — DST disagreement
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i17-monthly-modulo-on-aligned-anchorym-interval-may-align-below-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I17. monthly modulo on (aligned - anchorYM) % interval may align below window
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i18-isrecentselfwrite-returns-true-on-stat-error-masks-unrelated-deletes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I18. isRecentSelfWrite returns true on stat error → masks unrelated deletes
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#i19-fire-calls-osstat-after-debounce-does-not-preserve-deleted-for-paths-that-just-now-exist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        I19. fire calls os.Stat after debounce — does not preserve Deleted for paths that just-now exist
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#nice-to-have" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Nice-to-have
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Nice-to-have">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#n1-parseeventstart-builds-a-string-with-sprintf-per-row" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N1. parseEventStart builds a string with Sprintf per-row
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n2-formatbody-doesnt-pluralise-now-handle-1m" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N2. formatBody doesn't pluralise "now" / handle "1m"
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n3-buildnotification-always-sets-title-to-calemdar-roweventtitle-no-override" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N3. buildNotification always sets Title to "calemdar: " + row.Event.Title — no override
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n4-buildactionenv-exposes-paths-verbatim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N4. buildActionEnv exposes paths verbatim
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n5-scheduler-exports-mu-only-via-tickrun-callsites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N5. Scheduler exports mu only via tick/Run callsites
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n6-notify_fired-lacks-a-ttl-by-event-path-full-table-prune-by-fire_at_planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N6. notify_fired lacks a TTL-by-event-path; full-table prune by fire_at_planned
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n7-notify_fired-event_path-index-unused" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N7. notify_fired event_path index unused
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n8-sqlopen-doesnt-enable-_busy_timeout" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N8. sql.Open doesn't enable _busy_timeout
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n9-migrate-swallows-non-duplicate-column-alter-errors-but-only-after-the-substring-match" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N9. migrate swallows non-"duplicate column" ALTER errors but only after the substring match
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n10-upsertseries-ignores-json-marshal-errors-via-_-_-jsonmarshal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N10. UpsertSeries ignores JSON marshal errors via _, _ := json.Marshal
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n11-seriesscanseries-quietly-returns-nil-for-sqlerrnorows" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N11. Series.scanSeries quietly returns nil for sql.ErrNoRows
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n12-vaultresolve-returns-absolute-path-but-doesnt-symlink-resolve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N12. vault.Resolve returns absolute path but doesn't symlink-resolve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n13-expandtilde-swallows-the-osuserhomedir-error" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N13. expandTilde swallows the os.UserHomeDir error
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n14-runeventlist-parses-dates-with-timeutc-while-reading-via-modellocation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N14. runEventList parses dates with time.UTC while reading via model.Location()
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n15-notificationsvalidate-warns-about-ntfy-topic-but-not-url-when-notifs-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N15. Notifications.Validate warns about ntfy topic but not URL when notifs disabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n16-parselead-accepts-bare-integers-as-minutes-undocumented-in-notifyentry-comment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N16. ParseLead accepts bare integers as minutes — undocumented in NotifyEntry comment
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n17-parseentry-backup-trusts-that-slug-doesnt-contain-a-hyphen-stamp-lookalike" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N17. parseEntry (backup) trusts that slug doesn't contain a hyphen-stamp lookalike
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n18-archiverun-doesnt-update-sqlite-occurrences-after-move" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N18. archive.Run doesn't update sqlite occurrences after move
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n19-runnightly-doesnt-upsertoccurrence-after-reconcile" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N19. runNightly doesn't UpsertOccurrence after reconcile
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n20-actionscurateenv-lets-caller-supplied-extra-overwrite-any-earlier-set-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N20. actions.curateEnv lets caller-supplied extra overwrite any earlier-set key
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n21-runeventlist-has-range-flag-default-week-but-no-validation-of-yesterday-style-misuse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N21. runEventList has range flag default "week" but no validation of "yesterday"-style misuse
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#n22-parselead-rejects-5m-correctly-but-accepts-5m-as-5m-via-timeparseduration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        N22. ParseLead rejects "-5m" correctly but accepts "+5m" as 5m via time.ParseDuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#test-coverage-gaps-callouts-fold-into-important-fixes-if-you-ship-a-test-pass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test-coverage gaps (callouts; fold into Important fixes if you ship a test-pass)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-wins-one-line-fixes-ship-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick wins (one-line fixes, ship today)
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/arch-err/calemdar/edit/main/docs/reviews/2026-04-25-code.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="code-review-2026-04-25">Code Review — 2026-04-25<a class="headerlink" href="#code-review-2026-04-25" title="Permanent link">&para;</a></h1>
+<p>Calemdar is in solid shape for v1: layering is clean, the <code>internal/</code> boundaries are consistent, and the recent fixes (autoown race, scheduler 0-lead window, recurring delete cascade) are well-tested. The codebase is mostly idiomatic Go with sensible error wrapping and few gotchas. The biggest hardening opportunities are around the watcher/scheduler boundary (TTL pruning, race window assumptions, panic-safe goroutines), a handful of latent autoown footguns, and a couple of SQL/map-iteration bugs that are pure one-line fixes. No security-grade defects; the threat model around actions is honoured.</p>
+<p>Total findings: <strong>47</strong> — 6 Critical, 19 Important, 22 Nice-to-have.</p>
+<hr />
+<h2 id="critical">Critical<a class="headerlink" href="#critical" title="Permanent link">&para;</a></h2>
+<h3 id="c1-scheduler-tick-advances-lasttick-even-on-store-query-failure">C1. Scheduler <code>tick</code> advances <code>lastTick</code> even on store-query failure<a class="headerlink" href="#c1-scheduler-tick-advances-lasttick-even-on-store-query-failure" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:129-167</code> — when <code>ListUpcomingWithNotify</code> errors, <code>tick</code> returns early <em>without</em> updating <code>lastTick</code> (good), but every other failure path inside the loop continues to fall through to <code>sc.lastTick = now</code>. A transient SQLite error on the upcoming query is fine, but a malformed <code>Notify</code> JSON that escapes the per-row continue (e.g. a future scan error mid-loop) would still update <code>lastTick</code> to <code>now</code> and lose the missed window. Fix: defer <code>lastTick = now</code> only when the whole tick reaches end-of-loop cleanly; on any aborted iteration, leave <code>lastTick</code> alone so the next tick re-scans.</p>
+<h3 id="c2-dispatchevents-flips-user-owned-for-events-the-scheduler-is-mid-firing">C2. <code>dispatchEvents</code> flips user-owned for events the scheduler is mid-firing<a class="headerlink" href="#c2-dispatchevents-flips-user-owned-for-events-the-scheduler-is-mid-firing" title="Permanent link">&para;</a></h3>
+<p><code>internal/serve/dispatch.go:94-106</code> — <code>autoown.FlipIfNeeded</code> is called on every Changed event in <code>events/</code>, including events that the scheduler itself just touched via the action runner (e.g. an action that opens the event in <code>nvim</code>, mutating mtime). Today's autoown false-flip race fix (<code>watch.raceWindow</code>) protects against the scheduler/writer path but not action-side mutations. Fix: skip <code>FlipIfNeeded</code> when <code>e.SeriesExpandedAt</code> is within the last <code>raceWindow</code> of <code>time.Now()</code> and the file's mtime difference is below the same threshold; or gate the flip on a stat-then-stat compare bracketing the parse.</p>
+<h3 id="c3-selfwrites-map-grows-unbounded-no-janitor">C3. <code>selfWrites</code> map grows unbounded — no janitor<a class="headerlink" href="#c3-selfwrites-map-grows-unbounded-no-janitor" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:62-67, 137-166, 310-343</code> — entries are written by <code>NotifySelfWrite</code> / <code>NotifySelfDelete</code> and only removed when an <code>isRecentSelfWrite(path)</code> lookup notices the TTL has elapsed. Paths that are written once and never touched again (e.g. archived events) sit in the map for the lifetime of the daemon. After a long-running session with bulk reconciles, this can hold tens of thousands of stale entries. Fix: add a periodic janitor goroutine that walks <code>selfWrites</code> every minute and deletes entries older than <code>ttl</code>; or piggyback on the nightly loop.</p>
+<h3 id="c4-fires-action-goroutine-captures-ctx-which-is-the-per-tick-context">C4. <code>fire</code>'s action goroutine captures <code>ctx</code>, which is the per-tick context<a class="headerlink" href="#c4-fires-action-goroutine-captures-ctx-which-is-the-per-tick-context" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:209-216</code> — the <code>go func() { sc.actions.Run(ctx, ...) }()</code> captures the ctx passed into <code>tick</code>. That ctx <em>is</em> the daemon ctx today (passed through <code>Run</code> → <code>tick</code>), so this is correct in practice — but it's brittle. If a future refactor introduces a per-tick <code>context.WithTimeout</code>, the action goroutine survives the tick return while its ctx gets cancelled. Fix: pass the daemon's root ctx into <code>Scheduler</code> once at construction time and reference <code>sc.rootCtx</code> inside the goroutine, not the per-tick ctx.</p>
+<h3 id="c5-runrecurringdelete-opens-the-store-after-the-file-delete">C5. <code>runRecurringDelete</code> opens the store <em>after</em> the file delete<a class="headerlink" href="#c5-runrecurringdelete-opens-the-store-after-the-file-delete" title="Permanent link">&para;</a></h3>
+<p><code>cmd/calemdar/cmd_recurring.go:166-185</code> — if <code>os.Remove(r.Path)</code> succeeds and <code>store.Open(v)</code> then fails (lock contention, fs full, journal corruption), the on-disk root is gone and the sqlite series row + occurrence rows are stale; a subsequent <code>serve</code> reindex would rebuild correctly only if the user reads the warning and runs <code>reindex</code>. The series row is also the only <code>body_raw</code> snapshot — the very recovery path the daemon uses to auto-restore. Fix: open the store <em>before</em> removing the root file; perform sqlite cleanup only after a successful file delete; on store-open failure abort the delete with a clear error before any disk mutation.</p>
+<h3 id="c6-listupcomingwithnotify-widens-the-sql-date-filter-by-1-day-but-doesnt-widen-for-tz-that-crosses-midnight-when-from-to-is-impossible">C6. <code>ListUpcomingWithNotify</code> widens the SQL date filter by ±1 day but doesn't widen for tz that crosses midnight when <code>from &gt; to</code> is impossible<a class="headerlink" href="#c6-listupcomingwithnotify-widens-the-sql-date-filter-by-1-day-but-doesnt-widen-for-tz-that-crosses-midnight-when-from-to-is-impossible" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:341-412</code> — the comment claims a ±1 day widen covers tz straddling, but <code>to.AddDate(0, 0, 1)</code> is correct only for forward-tz. For UTC+12 events stored as 2026-05-04 with start_time 23:30, a query window of <code>[2026-05-04 22:00 UTC, 2026-05-04 23:00 UTC]</code> widens to <code>2026-05-03..2026-05-05</code> — fine. But events with <code>Date</code> produced by <code>e.Date+" "+e.StartTime</code> parsed in <code>loc</code> produce a wall-clock time that gets compared against UTC <code>from/to</code> from the scheduler. Scheduler passes <code>from = last</code>, <code>to = now.Add(maxLead)</code> — both are wall-clock <code>time.Time</code> from <code>time.Now()</code> (UTC-internal but locale-tagged via timer). The fine-filter line 406 (<code>ts.Before(from) || ts.After(to)</code>) compares two wall-clock times in possibly different <code>Location()</code>s; <code>time.Time.Before</code> is monotonic and tz-agnostic so this is <em>probably</em> correct, but the ±1 day SQL widen is anchored to <code>from</code> and <code>to</code> formatted as <code>2006-01-02</code> — which uses <em>their</em> location, not <code>model.Location()</code>. Fix: format the SQL widen using <code>from.In(model.Location()).AddDate(0,0,-1).Format(...)</code> so the date string matches the timezone the events were authored in.</p>
+<hr />
+<h2 id="important">Important<a class="headerlink" href="#important" title="Permanent link">&para;</a></h2>
+<h3 id="i1-parseeventstart-silently-drops-events-whose-datetime-cant-parse">I1. <code>parseEventStart</code> silently drops events whose date+time can't parse<a class="headerlink" href="#i1-parseeventstart-silently-drops-events-whose-datetime-cant-parse" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:279-288</code> — returns <code>(zero, false)</code>, scheduler <code>continue</code>s with no log. A valid-looking row with garbage <code>start_time</code> is a configuration bug worth surfacing. Fix: log at warn level on parse failure with <code>row.Event.Path</code> so the user sees the issue.</p>
+<h3 id="i2-recordfired-failure-does-not-block-send-double-fire-risk-on-restart">I2. <code>recordFired</code> failure does NOT block <code>Send</code> — double-fire risk on restart<a class="headerlink" href="#i2-recordfired-failure-does-not-block-send-double-fire-risk-on-restart" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:174-179</code> — comment says this is intentional, but the failure mode silently drops a sentinel: if SQLite is locked momentarily, the notification fires but no row lands. The next tick replays the rule. Fix: keep current behaviour but bump the log to a clear <code>WARN: dedupe sentinel not recorded — possible duplicate on restart</code> so the user can correlate noisy push duplicates to a real cause.</p>
+<h3 id="i3-recordfired-writes-rfc3339-second-resolution-but-isfired-queries-the-same-key-sub-second-skew-loses-dedupe">I3. <code>RecordFired</code> writes RFC3339 (second resolution) but <code>IsFired</code> queries the same key — sub-second skew loses dedupe<a class="headerlink" href="#i3-recordfired-writes-rfc3339-second-resolution-but-isfired-queries-the-same-key-sub-second-skew-loses-dedupe" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:417-441</code> — <code>fireAt.UTC().Format(time.RFC3339)</code> truncates to seconds. If <code>fireAt</code> is computed twice with different sub-second values (it shouldn't be — <code>startTs.Add(-lead)</code> is deterministic per row+rule+tick), the keys still match. But if <code>MinLead</code> is reduced or sub-minute leads ever land, the dedup key may collide across rules. Fix: include the rule lead string in the key, e.g. add a <code>lead</code> column to <code>notify_fired</code> or fold into <code>fire_at_planned</code> as <code>lead@time</code>.</p>
+<h3 id="i4-handlerecurringdelete-writes-the-file-with-0o644-even-when-source-had-different-mode">I4. <code>handleRecurringDelete</code> writes the file with <code>0o644</code> even when source had different mode<a class="headerlink" href="#i4-handlerecurringdelete-writes-the-file-with-0o644-even-when-source-had-different-mode" title="Permanent link">&para;</a></h3>
+<p><code>internal/serve/dispatch.go:170</code> — <code>os.WriteFile(path, []byte(r.RawSource), 0o644)</code> always sets 0o644. Same in CLI restore (<code>cmd_recurring.go:233</code>). For Obsidian on Linux that's fine, but if the user has a stricter umask or the original mode was 0o600 (secrets, etc.), it leaks. Fix: stat the original mode before delete, store it in the snapshot, and apply on restore. Or document the policy and stick with 0o644.</p>
+<h3 id="i5-addtree-swallows-errors-from-fsadd-for-newly-created-dirs">I5. <code>addTree</code> swallows errors from <code>fs.Add</code> for newly-created dirs<a class="headerlink" href="#i5-addtree-swallows-errors-from-fsadd-for-newly-created-dirs" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:208-216</code> — <code>if info, err := os.Stat(...); err == nil &amp;&amp; info.IsDir() { _ = w.addTree(ev.Name) }</code>. The <code>_ =</code> discards <code>addTree</code> errors; if a newly-created dir can't be watched, events under it vanish silently. Fix: log on failure: <code>if err := w.addTree(ev.Name); err != nil { log.Printf("watch: addTree %s: %v", ev.Name, err) }</code>.</p>
+<h3 id="i6-flushpending-closes-wevents-while-fire-may-still-be-writing-to-it">I6. <code>flushPending</code> closes <code>w.events</code> while <code>fire</code> may still be writing to it<a class="headerlink" href="#i6-flushpending-closes-wevents-while-fire-may-still-be-writing-to-it" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:255-296</code> — <code>flushPending</code> is called from the <code>loop()</code> goroutine on <code>&lt;-w.done</code>, but <code>fire</code> (running on <code>time.AfterFunc</code> goroutines) holds <code>pendingMu</code> to delete its entry then releases the lock and writes to <code>w.events</code>. If <code>Stop()</code> races the timer's fire, <code>fire</code> writes to a closed channel → panic. Fix: in <code>fire</code>, check <code>select { case &lt;-w.done: return; default: }</code> <em>after</em> acquiring pending entry, before sending.</p>
+<h3 id="i7-enqueue-clobbers-the-original-source-classification-on-re-trigger">I7. <code>enqueue</code> clobbers the original source classification on re-trigger<a class="headerlink" href="#i7-enqueue-clobbers-the-original-source-classification-on-re-trigger" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:243-253</code> — on re-fire, <code>p.kind = kind; p.src = src</code>. Source can never change for a path (recurring vs events is path-prefix), so this is harmless today. But the silent overwrite is a footgun if the classification ever broadens. Fix: assert source equality and log if mismatch; or skip the assignment — the original is fine.</p>
+<h3 id="i8-dispatchrecurring-re-loads-events-from-disk-after-every-reconcile">I8. <code>dispatchRecurring</code> re-loads events from disk after every reconcile<a class="headerlink" href="#i8-dispatchrecurring-re-loads-events-from-disk-after-every-reconcile" title="Permanent link">&para;</a></h3>
+<p><code>internal/serve/dispatch.go:60-69</code> — calls <code>series.LoadEventsForSeries(opts.Vault, r)</code>, which does a full <code>WalkDir</code> over <code>events/&lt;calendar&gt;</code>. For a calendar with thousands of events (life), that's an O(N) walk on every single reconcile event. The reconcile pass already produced the in-plan list. Fix: have <code>reconcile.Series</code> return the events it wrote so dispatch can <code>UpsertOccurrence</code> from that list directly.</p>
+<h3 id="i9-archiverun-calls-writernotifyselftarget-for-archive-tree-paths-that-arent-watched">I9. <code>archive.Run</code> calls <code>writer.NotifySelf(target)</code> for archive-tree paths that aren't watched<a class="headerlink" href="#i9-archiverun-calls-writernotifyselftarget-for-archive-tree-paths-that-arent-watched" title="Permanent link">&para;</a></h3>
+<p><code>internal/archive/archive.go:73-74</code> — comment says "destination under archive/ (not watched, but harmless)", but the watcher's <code>selfWrites</code> map grows for every archived event with a path that will never be re-touched (compounds C3). Fix: drop the second NotifySelf call.</p>
+<h3 id="i10-reactormigrateone-calls-notifyself-on-the-original-path-after-the-file-is-removed">I10. <code>reactor.migrateOne</code> calls <code>NotifySelf</code> on the <em>original</em> path AFTER the file is removed<a class="headerlink" href="#i10-reactormigrateone-calls-notifyself-on-the-original-path-after-the-file-is-removed" title="Permanent link">&para;</a></h3>
+<p><code>internal/reactor/reactor.go:120-123</code> — <code>os.Remove(path)</code> runs, then <code>writer.NotifySelf(path)</code>. NotifySelf is the post-write hook (stats the file); the file is gone so it falls into the <code>mark.isRemove = true</code> branch. Functionally OK, but semantically should be <code>NotifySelfDelete(path)</code> <em>before</em> the Remove. Fix: swap to <code>NotifySelfDelete</code> and move it above the <code>os.Remove</code>.</p>
+<h3 id="i11-names-in-actionsrunner-has-unspecified-ordering">I11. <code>Names()</code> in actions.Runner has unspecified ordering<a class="headerlink" href="#i11-names-in-actionsrunner-has-unspecified-ordering" title="Permanent link">&para;</a></h3>
+<p><code>internal/actions/actions.go:182-193</code> — comment says "Order is unspecified"; CLI <code>notifyActions</code> iterates <code>cfg.Actions</code> directly, so users see different orderings between runs. Cosmetic but jarring. Fix: sort.Strings before return.</p>
+<h3 id="i12-reload-swaps-cfg-but-doesnt-resize-the-semaphore">I12. <code>Reload</code> swaps <code>cfg</code> but doesn't resize the semaphore<a class="headerlink" href="#i12-reload-swaps-cfg-but-doesnt-resize-the-semaphore" title="Permanent link">&para;</a></h3>
+<p><code>internal/actions/actions.go:163-167</code> — comment says "keeps the runner's semaphore intact". If the user changes <code>max_concurrent_spawns</code>, they need a daemon restart. Document this in the function comment and surface a log line, or rebuild the semaphore atomically. Fix: log a warning if a Reload would change concurrency and the runner can't honor it without restart.</p>
+<h3 id="i13-reset-is-documented-as-test-only-but-is-called-in-servestartscheduler">I13. <code>Reset()</code> is documented as test-only but is called in <code>serve.startScheduler</code><a class="headerlink" href="#i13-reset-is-documented-as-test-only-but-is-called-in-servestartscheduler" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/registry.go:30-35</code> — comment: "Test-only helper. Production code never needs to drop registered backends." But <code>serve.go:138</code> does exactly that ("Always start fresh"). Either the production call is wrong, or the comment is stale. Fix: update the comment to reflect that <code>Reset</code> is also called on daemon (re)start.</p>
+<h3 id="i14-runrecurringdelete-doesnt-check-for-in-progress-watcher">I14. <code>runRecurringDelete</code> doesn't check for in-progress watcher<a class="headerlink" href="#i14-runrecurringdelete-doesnt-check-for-in-progress-watcher" title="Permanent link">&para;</a></h3>
+<p>The CLI delete races against a running daemon. The watcher's debounce (500ms) means a CLI delete during a tick window can still produce a Deleted event in dispatch — which would then look up by path, find no series row (we just deleted it), and log "no snapshot". Functionally safe but the warning is misleading. Fix: in <code>handleRecurringDelete</code>, check whether a backup file exists for this path's slug created in the last <code>~5s</code> before logging "no snapshot" — if so, this is the CLI delete, log a debug-level message instead.</p>
+<h3 id="i15-splitfrontmatter-parsego-and-fcparse-is-duplicated-verbatim">I15. <code>splitFrontmatter</code> (parse.go and fcparse) is duplicated verbatim<a class="headerlink" href="#i15-splitfrontmatter-parsego-and-fcparse-is-duplicated-verbatim" title="Permanent link">&para;</a></h3>
+<p><code>internal/model/parse.go:20-56</code> and <code>internal/fcparse/translate.go:223-258</code> — two copies of the same scanner. They have identical bugs/quirks (16MB max). Fix: move to a small shared package (e.g. <code>internal/markdown</code>) and import. The "fcparse doesn't depend on model's unexported helper" reasoning isn't load-bearing.</p>
+<h3 id="i16-daysbetween-uses-intbsubahours-24-dst-disagreement">I16. <code>daysBetween</code> uses <code>int(b.Sub(a).Hours() / 24)</code> — DST disagreement<a class="headerlink" href="#i16-daysbetween-uses-intbsubahours-24-dst-disagreement" title="Permanent link">&para;</a></h3>
+<p><code>internal/expand/dates.go:140-142</code> — Hours()/24 floors negative durations toward zero, which is <em>not</em> the same as toward minus-infinity. For the weekly expander, <code>daysBetween(anchor, cur)</code> where <code>cur &lt; anchor</code> produces a wrong week count and a wrong modulo result. The current call sites have <code>cur &gt;= anchor</code> so it works, but it's a footgun if <code>weekly</code> is ever called with a window before <code>startDate</code>. Fix: use <code>int(b.Sub(a) / (24 * time.Hour))</code> — same floor — but document the assumption or guard against negative.</p>
+<h3 id="i17-monthly-modulo-on-aligned-anchorym-interval-may-align-below-window">I17. <code>monthly</code> modulo on <code>(aligned - anchorYM) % interval</code> may align below window<a class="headerlink" href="#i17-monthly-modulo-on-aligned-anchorym-interval-may-align-below-window" title="Permanent link">&para;</a></h3>
+<p><code>internal/expand/dates.go:63-96</code> — when <code>winYM == anchorYM</code>, <code>aligned == anchorYM</code> (mod 0), correct. When <code>winYM &gt; anchorYM</code> and the diff isn't divisible, <code>aligned += interval - mod</code> — bumps <em>past</em> <code>winYM</code>. Looks right. But <code>if winYM &lt; anchorYM { winYM = anchorYM }</code> mutates <code>winYM</code> after <code>aligned</code> is initialized — actually <code>aligned</code> is set on the next line <em>from</em> <code>winYM</code>, so OK. Confusing read; refactor into a helper for readability.</p>
+<h3 id="i18-isrecentselfwrite-returns-true-on-stat-error-masks-unrelated-deletes">I18. <code>isRecentSelfWrite</code> returns true on stat error → masks unrelated deletes<a class="headerlink" href="#i18-isrecentselfwrite-returns-true-on-stat-error-masks-unrelated-deletes" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:323-329</code> — <code>info, err := os.Stat(path); if err != nil { return true }</code>. This is <em>intentional</em>: a self-write whose post-write stat fails (file already removed) shouldn't be re-emitted. But if a separate, unrelated path lookup hits a stat error (permission denied, transient FS hiccup), we suppress real events. Fix: distinguish <code>ErrNotExist</code> (genuine race with removal — return true) from other errors (log and return false).</p>
+<h3 id="i19-fire-calls-osstat-after-debounce-does-not-preserve-deleted-for-paths-that-just-now-exist">I19. <code>fire</code> calls <code>os.Stat</code> after debounce — does not preserve <code>Deleted</code> for paths that just-now exist<a class="headerlink" href="#i19-fire-calls-osstat-after-debounce-does-not-preserve-deleted-for-paths-that-just-now-exist" title="Permanent link">&para;</a></h3>
+<p><code>internal/watch/watch.go:273-281</code> — when a Deleted event is queued and then the file gets re-created within the debounce window, <code>fire</code> will see the file via <code>os.Stat</code> and emit <code>Changed</code>. That's correct for atomic-rename saves but wrong for "user deleted, then re-created with different content" — the <code>Deleted</code> is lost. Niche, but it can mask the recurring-delete safeguard if the user does a quick delete+recreate via Obsidian. Fix: if <code>p.kind == Deleted</code> and a file now exists at <code>path</code>, emit <em>both</em> a Deleted then a Changed.</p>
+<hr />
+<h2 id="nice-to-have">Nice-to-have<a class="headerlink" href="#nice-to-have" title="Permanent link">&para;</a></h2>
+<h3 id="n1-parseeventstart-builds-a-string-with-sprintf-per-row">N1. <code>parseEventStart</code> builds a string with <code>Sprintf</code> per-row<a class="headerlink" href="#n1-parseeventstart-builds-a-string-with-sprintf-per-row" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:283</code> — concat <code>e.Date + " " + e.StartTime</code> is faster and simpler. Fix: replace <code>fmt.Sprintf("%s %s", ...)</code> with a <code>+</code> concat.</p>
+<h3 id="n2-formatbody-doesnt-pluralise-now-handle-1m">N2. <code>formatBody</code> doesn't pluralise "now" / handle "1m"<a class="headerlink" href="#n2-formatbody-doesnt-pluralise-now-handle-1m" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:257-275</code> — output reads "Standup — in 1m @ 10:00" which is fine, but "in 0m" is impossible (we map to "now"). Edge case: "in 60m" should arguably display as "in 1h". Fix: if duration parses cleanly, use <code>lead.String()</code> after the parse; or keep raw string for fidelity and document the choice.</p>
+<h3 id="n3-buildnotification-always-sets-title-to-calemdar-roweventtitle-no-override">N3. <code>buildNotification</code> always sets Title to <code>"calemdar: " + row.Event.Title</code> — no override<a class="headerlink" href="#n3-buildnotification-always-sets-title-to-calemdar-roweventtitle-no-override" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:226-238</code> — phones truncate at ~30 chars; "calemdar: " is 10 of them. Fix: optional cfg knob <code>notifications.title_prefix</code> (default "calemdar: ") so users can shorten it.</p>
+<h3 id="n4-buildactionenv-exposes-paths-verbatim">N4. <code>buildActionEnv</code> exposes paths verbatim<a class="headerlink" href="#n4-buildactionenv-exposes-paths-verbatim" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:243-253</code> — <code>CALEMDAR_PATH</code> is the absolute path to the event file. For shell-action users, this needs careful quoting. Document the contract: action authors are responsible for quoting. Fix: add a doc comment.</p>
+<h3 id="n5-scheduler-exports-mu-only-via-tickrun-callsites">N5. <code>Scheduler</code> exports <code>mu</code> only via <code>tick</code>/<code>Run</code> callsites<a class="headerlink" href="#n5-scheduler-exports-mu-only-via-tickrun-callsites" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify/scheduler.go:63-67</code> — <code>mu</code> guards <code>lastTick</code> only. The mutex's name is generic; prefer <code>lastTickMu sync.Mutex</code> or use <code>atomic.Pointer[time.Time]</code>. Fix: rename for clarity.</p>
+<h3 id="n6-notify_fired-lacks-a-ttl-by-event-path-full-table-prune-by-fire_at_planned">N6. <code>notify_fired</code> lacks a TTL-by-event-path; full-table prune by <code>fire_at_planned</code><a class="headerlink" href="#n6-notify_fired-lacks-a-ttl-by-event-path-full-table-prune-by-fire_at_planned" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:445-452</code> — pruning by planned-fire-at means a notif that fired 14 days ago is gone, but a row whose <code>fire_at_planned</code> is in the future (because of a clock-skew mishap) is never pruned. Niche. Fix: bump prune to <code>WHERE fire_at_planned &lt; cutoff OR fired_at &lt; cutoff</code>.</p>
+<h3 id="n7-notify_fired-event_path-index-unused">N7. <code>notify_fired</code> <code>event_path</code> index unused<a class="headerlink" href="#n7-notify_fired-event_path-index-unused" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:100</code> — <code>notify_fired_path</code> is created but the only query uses the full PRIMARY KEY (<code>event_path, notify_index, fire_at_planned</code>), which already covers <code>event_path</code> lookups. Fix: drop the redundant index.</p>
+<h3 id="n8-sqlopen-doesnt-enable-_busy_timeout">N8. <code>sql.Open</code> doesn't enable <code>_busy_timeout</code><a class="headerlink" href="#n8-sqlopen-doesnt-enable-_busy_timeout" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:35</code> — under WAL with concurrent writers (CLI delete during daemon tick), <code>database is locked</code> errors can surface. Fix: append <code>&amp;_pragma=busy_timeout(5000)</code> to the connection string.</p>
+<h3 id="n9-migrate-swallows-non-duplicate-column-alter-errors-but-only-after-the-substring-match">N9. <code>migrate</code> swallows non-"duplicate column" ALTER errors but only after the substring match<a class="headerlink" href="#n9-migrate-swallows-non-duplicate-column-alter-errors-but-only-after-the-substring-match" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:106-122</code> — <code>strings.Contains(err.Error(), "duplicate column name")</code> is brittle if the modernc/sqlite driver changes the error text. Fix: query <code>PRAGMA table_info(occurrences)</code> first and only ALTER when the column is missing.</p>
+<h3 id="n10-upsertseries-ignores-json-marshal-errors-via-_-_-jsonmarshal">N10. <code>UpsertSeries</code> ignores JSON marshal errors via <code>_, _ := json.Marshal</code><a class="headerlink" href="#n10-upsertseries-ignores-json-marshal-errors-via-_-_-jsonmarshal" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:128-131</code> — <code>[]string</code> and <code>[]int</code> will never fail to marshal, so this is fine. Document the assumption with a <code>// json.Marshal of slices cannot fail</code> comment so future fields don't break the invariant silently.</p>
+<h3 id="n11-seriesscanseries-quietly-returns-nil-for-sqlerrnorows">N11. <code>Series.scanSeries</code> quietly returns nil for <code>sql.ErrNoRows</code><a class="headerlink" href="#n11-seriesscanseries-quietly-returns-nil-for-sqlerrnorows" title="Permanent link">&para;</a></h3>
+<p><code>internal/store/store.go:465-488</code> — same shape repeated in <code>GetSeriesByPath</code> and <code>ListSeries</code>. Fix: extract a <code>scanRoot</code> helper accepting <code>Scanner</code>, removing ~80 lines of duplication.</p>
+<h3 id="n12-vaultresolve-returns-absolute-path-but-doesnt-symlink-resolve">N12. <code>vault.Resolve</code> returns absolute path but doesn't symlink-resolve<a class="headerlink" href="#n12-vaultresolve-returns-absolute-path-but-doesnt-symlink-resolve" title="Permanent link">&para;</a></h3>
+<p><code>internal/vault/vault.go:24-49</code> — if vault is a symlink, watcher events arrive with the symlink-target path while <code>EventsDir()</code> returns the symlink path. Mismatch breaks <code>classify</code>. Fix: <code>filepath.EvalSymlinks</code> before storing in <code>Vault.Root</code>.</p>
+<h3 id="n13-expandtilde-swallows-the-osuserhomedir-error">N13. <code>expandTilde</code> swallows the <code>os.UserHomeDir</code> error<a class="headerlink" href="#n13-expandtilde-swallows-the-osuserhomedir-error" title="Permanent link">&para;</a></h3>
+<p><code>internal/vault/vault.go:68-80</code> — <code>if expanded, err := expandTilde(p); err == nil { p = expanded }</code> in <code>Resolve</code> — silent fallthrough means a homedir-less environment misroutes "~" to literal "~". Fix: surface the err.</p>
+<h3 id="n14-runeventlist-parses-dates-with-timeutc-while-reading-via-modellocation">N14. <code>runEventList</code> parses dates with <code>time.UTC</code> while reading via <code>model.Location()</code><a class="headerlink" href="#n14-runeventlist-parses-dates-with-timeutc-while-reading-via-modellocation" title="Permanent link">&para;</a></h3>
+<p><code>cmd/calemdar/cmd_event.go:38</code> — <code>model.ParseDate(date, time.UTC)</code> accepts user input but the rest of the code uses <code>model.Location()</code>. For YYYY-MM-DD parse this is harmless (no DST or offset effect), but the inconsistency is jarring. Fix: pass <code>model.Location()</code> everywhere user-input dates flow.</p>
+<h3 id="n15-notificationsvalidate-warns-about-ntfy-topic-but-not-url-when-notifs-disabled">N15. <code>Notifications.Validate</code> warns about ntfy topic but not URL when notifs disabled<a class="headerlink" href="#n15-notificationsvalidate-warns-about-ntfy-topic-but-not-url-when-notifs-disabled" title="Permanent link">&para;</a></h3>
+<p><code>internal/config/config.go:218-227</code> — the disabled path checks topic regex but skips URL syntax. Fix: add a URL syntax check for symmetry, or drop the topic pre-flight to keep "disabled means lax".</p>
+<h3 id="n16-parselead-accepts-bare-integers-as-minutes-undocumented-in-notifyentry-comment">N16. <code>ParseLead</code> accepts bare integers as minutes — undocumented in NotifyEntry comment<a class="headerlink" href="#n16-parselead-accepts-bare-integers-as-minutes-undocumented-in-notifyentry-comment" title="Permanent link">&para;</a></h3>
+<p><code>internal/model/notify.go:34-38, 92-115</code> — the <code>notify</code> example shows <code>"5m"</code> but <code>"5"</code> works the same. Fix: add the <code>"5"</code> form to the doc comment.</p>
+<h3 id="n17-parseentry-backup-trusts-that-slug-doesnt-contain-a-hyphen-stamp-lookalike">N17. <code>parseEntry</code> (backup) trusts that slug doesn't contain a hyphen-stamp lookalike<a class="headerlink" href="#n17-parseentry-backup-trusts-that-slug-doesnt-contain-a-hyphen-stamp-lookalike" title="Permanent link">&para;</a></h3>
+<p><code>internal/backup/backup.go:138-161</code> — slug is enforced lowercase by Slugify, which produces hyphens. A slug ending in numerals followed by <code>-2026-...</code> would parse as if <code>2026-...</code> were the stamp. Slug regex (none) → defensive parsing. Fix: validate the recovered slug against a regex; reject if it ends in <code>-2026</code> or similar.</p>
+<h3 id="n18-archiverun-doesnt-update-sqlite-occurrences-after-move">N18. <code>archive.Run</code> doesn't update sqlite occurrences after move<a class="headerlink" href="#n18-archiverun-doesnt-update-sqlite-occurrences-after-move" title="Permanent link">&para;</a></h3>
+<p><code>internal/archive/archive.go:70-78</code> — file moves to archive but <code>occurrences</code> table still points to the old path. Next tick the watcher emits Deleted on the old path → <code>DeleteOccurrence</code>. So eventually consistent, but for a window the cache is wrong. Fix: explicitly <code>DeleteOccurrence(oldPath)</code> (no <code>UpsertOccurrence(newPath)</code> since archive isn't watched).</p>
+<h3 id="n19-runnightly-doesnt-upsertoccurrence-after-reconcile">N19. <code>runNightly</code> doesn't UpsertOccurrence after reconcile<a class="headerlink" href="#n19-runnightly-doesnt-upsertoccurrence-after-reconcile" title="Permanent link">&para;</a></h3>
+<p><code>internal/serve/nightly.go:24-35</code> — only <code>UpsertSeries</code> is called; the occurrences from the reconcile aren't pushed into sqlite. The next watcher tick eventually surfaces them, but until then the cache is behind. Fix: mirror dispatchRecurring's full upsert loop.</p>
+<h3 id="n20-actionscurateenv-lets-caller-supplied-extra-overwrite-any-earlier-set-key">N20. <code>actions.curateEnv</code> lets caller-supplied <code>extra</code> overwrite any earlier-set key<a class="headerlink" href="#n20-actionscurateenv-lets-caller-supplied-extra-overwrite-any-earlier-set-key" title="Permanent link">&para;</a></h3>
+<p><code>internal/actions/actions.go:259-278</code> — <code>extra</code> map is appended last; an action that sets <code>CALEMDAR_TITLE=foo</code> via env can collide with <code>PATH</code> if a buggy CALEMDAR_* mapping ever overlaps. Today no overlap exists. Fix: explicitly forbid <code>extra</code> keys that match <code>desktopPassthrough</code> or <code>PATH/HOME/USER</code>.</p>
+<h3 id="n21-runeventlist-has-range-flag-default-week-but-no-validation-of-yesterday-style-misuse">N21. <code>runEventList</code> has <code>range</code> flag default "week" but no validation of "yesterday"-style misuse<a class="headerlink" href="#n21-runeventlist-has-range-flag-default-week-but-no-validation-of-yesterday-style-misuse" title="Permanent link">&para;</a></h3>
+<p><code>cmd/calemdar/cmd_event.go:114-145</code> — switch only knows {today, week, month, all}. Returns clear error. OK as-is.</p>
+<h3 id="n22-parselead-rejects-5m-correctly-but-accepts-5m-as-5m-via-timeparseduration">N22. <code>ParseLead</code> rejects <code>"-5m"</code> correctly but accepts <code>"+5m"</code> as 5m via <code>time.ParseDuration</code><a class="headerlink" href="#n22-parselead-rejects-5m-correctly-but-accepts-5m-as-5m-via-timeparseduration" title="Permanent link">&para;</a></h3>
+<p><code>internal/model/notify.go:107-114</code> — fine, but undocumented. Fix: document explicitly that leading <code>+</code> is permitted and <code>-</code> rejected.</p>
+<hr />
+<h2 id="test-coverage-gaps-callouts-fold-into-important-fixes-if-you-ship-a-test-pass">Test-coverage gaps (callouts; fold into Important fixes if you ship a test-pass)<a class="headerlink" href="#test-coverage-gaps-callouts-fold-into-important-fixes-if-you-ship-a-test-pass" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Bulk-fanout reconcile race</strong> — no test exercises <code>dispatchRecurring</code> while the watcher's <code>selfWrites</code> map is hot. A test that triggers reconcile of a 100-event series, then immediately <code>os.Stat</code>s every written file via the fsnotify pipeline, would catch any regression of the autoown false-flip.</li>
+<li><strong>Scheduler restart-replay window</strong> — <code>TestSchedulerDoesNotReplayHistoryOnRestart</code> covers fire_at strictly in the past. No test for fire_at exactly at <code>now - 2*tickInterval</code> (the boundary).</li>
+<li><strong>Recurring delete --purge-events cascade</strong> — <code>TestRecurringDeleteWithPurgeEvents</code> verifies file removal and backup; no test confirms sqlite <code>DeleteOccurrence</code> actually runs (a follow-up <code>ListOccurrencesInRange</code> to assert empty would close the loop).</li>
+<li><strong><code>handleRecurringDelete</code> when sqlite is unreachable</strong> — what if <code>r.RawSource == ""</code> AND the file is gone? Logs "snapshot missing"; no test.</li>
+<li><strong><code>autoown.FlipIfNeeded</code> on a transiently missing file</strong> — <code>model.ParseEvent</code> returns <code>os.ErrNotExist</code>; the dispatch swallows it, but autoown is called <em>before</em> the existence check and may surface its own error. Add a test.</li>
+<li><strong>Watcher behaviour when fsnotify drops events</strong> — kernel buffer overflow path is untested. A queue-flood test would catch any regressions in the <code>Errors</code> channel handling.</li>
+<li><strong><code>writer.WriteRoot</code> self-write notify ordering</strong> — current code calls <code>writeMarkdown</code> then <code>NotifySelf</code>. No test confirms that the watcher actually sees mtime equality (write vs stat race). Fold into watch_test as a property test.</li>
+<li><strong><code>reactor.Run</code> slug collision</strong> — collision check exists; no test for it.</li>
+<li><strong><code>ListUpcomingWithNotify</code> with malformed JSON</strong> — current code <code>continue</code>s; add a test asserting the malformed row is skipped without panicking.</li>
+</ul>
+<hr />
+<h2 id="quick-wins-one-line-fixes-ship-today">Quick wins (one-line fixes, ship today)<a class="headerlink" href="#quick-wins-one-line-fixes-ship-today" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Fix</th>
+<th>File:Line</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QW1</td>
+<td>Log <code>addTree</code> failure on Create</td>
+<td><code>internal/watch/watch.go:215</code></td>
+</tr>
+<tr>
+<td>QW2</td>
+<td>Drop redundant <code>notify_fired_path</code> index</td>
+<td><code>internal/store/store.go:100</code></td>
+</tr>
+<tr>
+<td>QW3</td>
+<td>Sort <code>actions.Names()</code> output</td>
+<td><code>internal/actions/actions.go:191</code></td>
+</tr>
+<tr>
+<td>QW4</td>
+<td>Swap <code>NotifySelf</code> → <code>NotifySelfDelete</code> in reactor</td>
+<td><code>internal/reactor/reactor.go:120-123</code></td>
+</tr>
+<tr>
+<td>QW5</td>
+<td>Log <code>parseEventStart</code> parse failures</td>
+<td><code>internal/notify/scheduler.go:138</code></td>
+</tr>
+<tr>
+<td>QW6</td>
+<td>Add <code>_pragma=busy_timeout(5000)</code> to sqlite open</td>
+<td><code>internal/store/store.go:35</code></td>
+</tr>
+<tr>
+<td>QW7</td>
+<td>Drop the second <code>NotifySelf(target)</code> in archive.Run</td>
+<td><code>internal/archive/archive.go:74</code></td>
+</tr>
+<tr>
+<td>QW8</td>
+<td>Update <code>Reset()</code> doc to mention daemon restart use</td>
+<td><code>internal/notify/registry.go:30</code></td>
+</tr>
+<tr>
+<td>QW9</td>
+<td>Format SQL date widen using <code>model.Location()</code></td>
+<td><code>internal/store/store.go:346-347</code></td>
+</tr>
+<tr>
+<td>QW10</td>
+<td>Surface <code>expandTilde</code> error in <code>vault.Resolve</code></td>
+<td><code>internal/vault/vault.go:34-36</code></td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/arch-err/calemdar" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.sections", "content.action.edit", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
