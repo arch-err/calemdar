@@ -53,9 +53,16 @@ func NotifySelfDelete(path string) {
 // directories as needed. Overwrites any existing file. Notifies the watcher
 // of the self-write after the syscall completes (so the post-write mtime
 // can be captured for accurate suppression).
+//
+// Defaults Type to "single" if empty — FC writes one-offs without a
+// `type:` key, and a re-marshal of the parsed Event struct via autoown
+// would otherwise emit `type: ""`, which FC silently skips.
 func WriteEvent(e *model.Event) error {
 	if e.Path == "" {
 		return fmt.Errorf("write: event.Path empty")
+	}
+	if e.Type == "" {
+		e.Type = "single"
 	}
 	if err := writeMarkdown(e.Path, e, e.Body); err != nil {
 		return err
