@@ -81,6 +81,15 @@ type selfWriteMark struct {
 	isRemove bool
 }
 
+// raceWindow is the grace period within which we suppress events even on
+// mtime mismatch. Bulk-fanout reconciles (260+ files in a tight loop)
+// occasionally see the kernel finalise mtime after our post-write stat,
+// leading to false-positive external-edit detection on every single
+// expanded occurrence. A few seconds of trust covers the race without
+// silently absorbing genuine user edits — those happen seconds-to-hours
+// after a write, not in the same fsnotify burst.
+const raceWindow = 3 * time.Second
+
 // Start begins watching. Returns immediately; events flow on Events().
 func Start(v *vault.Vault) (*Watcher, error) {
 	return StartWithDebounce(v, 500*time.Millisecond)
@@ -318,5 +327,17 @@ func (w *Watcher) isRecentSelfWrite(path string) bool {
 		// Treat as suppressed to avoid false "external edit" detection.
 		return true
 	}
-	return info.ModTime().Equal(m.mtime)
+	if info.ModTime().Equal(m.mtime) {
+		return true
+	}
+	// mtime mismatch can still be a self-write under bulk-fanout races: the
+	// kernel sometimes finalises mtime fractionally after our post-write
+	// stat, so a follow-up stat sees a different value. Inside a short race
+	// window after the mark, trust the path-level signal regardless of
+	// mtime. Past the window, mtime mismatch genuinely means something
+	// external rewrote the file.
+	if time.Since(m.at) < raceWindow {
+		return true
+	}
+	return false
 }

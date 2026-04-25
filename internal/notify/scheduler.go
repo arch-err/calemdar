@@ -198,11 +198,21 @@ func (sc *Scheduler) fire(ctx context.Context, row store.UpcomingRow, rule model
 			return
 		}
 		env := buildActionEnv(row, rule)
-		if err := sc.actions.Run(ctx, rule.Action, env); err != nil {
-			log.Printf("notify: action %q for %s: %v", rule.Action, row.Event.Path, err)
-			return
-		}
-		log.Printf("notify: %s → action %q", row.Event.Title, rule.Action)
+		// Dispatch async — the action may shell out to a slow GUI launcher
+		// (gtk-launch waits for the spawned program to start, not exit, but
+		// some apps still take 10-30s to come up). Blocking the scheduler
+		// tick on that risks missing the next 1m tick. The runner already
+		// caps concurrency via its own semaphore.
+		title := row.Event.Title
+		path := row.Event.Path
+		action := rule.Action
+		go func() {
+			if err := sc.actions.Run(ctx, action, env); err != nil {
+				log.Printf("notify: action %q for %s: %v", action, path, err)
+				return
+			}
+			log.Printf("notify: %s → action %q", title, action)
+		}()
 	}
 }
 
