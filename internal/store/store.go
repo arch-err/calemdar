@@ -63,7 +63,8 @@ CREATE TABLE IF NOT EXISTS series (
   end_time        TEXT,
   all_day         INTEGER NOT NULL,
   exceptions_json TEXT,
-  root_path       TEXT NOT NULL UNIQUE
+  root_path       TEXT NOT NULL UNIQUE,
+  body_raw        TEXT
 );
 
 CREATE TABLE IF NOT EXISTS occurrences (
@@ -110,6 +111,14 @@ CREATE INDEX IF NOT EXISTS notify_fired_path ON notify_fired(event_path);
 			return err
 		}
 	}
+	// Same for body_raw on series — added for the deletion-safeguard
+	// snapshot. Pre-snapshot DBs still work; rows get filled on next
+	// UpsertSeries / Reindex.
+	if _, err := s.db.Exec(`ALTER TABLE series ADD COLUMN body_raw TEXT`); err != nil {
+		if !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -124,8 +133,8 @@ func (s *Store) UpsertSeries(r *model.Root) error {
 	_, err := s.db.Exec(`
 		INSERT INTO series (id, slug, calendar, title, freq, interval_n,
 			byday_json, bymonthday_json, start_date, until_date,
-			start_time, end_time, all_day, exceptions_json, root_path)
-		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+			start_time, end_time, all_day, exceptions_json, root_path, body_raw)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(id) DO UPDATE SET
 			slug=excluded.slug,
 			calendar=excluded.calendar,
@@ -140,13 +149,15 @@ func (s *Store) UpsertSeries(r *model.Root) error {
 			end_time=excluded.end_time,
 			all_day=excluded.all_day,
 			exceptions_json=excluded.exceptions_json,
-			root_path=excluded.root_path
+			root_path=excluded.root_path,
+			body_raw=excluded.body_raw
 	`,
 		r.ID, r.Slug, r.Calendar, r.Title, r.Freq, r.Interval,
 		string(bydayJSON), string(bymonthdayJSON),
 		r.StartDate, nullIfEmpty(r.Until),
 		nullIfEmpty(r.StartTime), nullIfEmpty(r.EndTime),
 		boolToInt(r.AllDay), string(exceptionsJSON), r.Path,
+		nullIfEmpty(r.RawSource),
 	)
 	return err
 }
@@ -161,16 +172,50 @@ func (s *Store) DeleteSeries(id string) error {
 func (s *Store) GetSeries(id string) (*model.Root, error) {
 	row := s.db.QueryRow(`SELECT slug, calendar, title, freq, interval_n,
 		byday_json, bymonthday_json, start_date, until_date,
-		start_time, end_time, all_day, exceptions_json, root_path
+		start_time, end_time, all_day, exceptions_json, root_path, body_raw
 		FROM series WHERE id = ?`, id)
 	return scanSeries(row, id)
+}
+
+// GetSeriesByPath returns a series whose root_path matches path, or nil.
+// Used by the auto-restore flow when fsnotify fires a DELETE — at that
+// point the file is gone, so there's no id to look up by.
+func (s *Store) GetSeriesByPath(path string) (*model.Root, error) {
+	row := s.db.QueryRow(`SELECT id, slug, calendar, title, freq, interval_n,
+		byday_json, bymonthday_json, start_date, until_date,
+		start_time, end_time, all_day, exceptions_json, root_path, body_raw
+		FROM series WHERE root_path = ?`, path)
+
+	var id string
+	var r model.Root
+	var bydayJSON, bymonthdayJSON, exceptionsJSON string
+	var until, startTime, endTime, bodyRaw sql.NullString
+	var allDay int
+	if err := row.Scan(&id, &r.Slug, &r.Calendar, &r.Title, &r.Freq, &r.Interval,
+		&bydayJSON, &bymonthdayJSON, &r.StartDate, &until,
+		&startTime, &endTime, &allDay, &exceptionsJSON, &r.Path, &bodyRaw); err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	r.ID = id
+	r.Until = until.String
+	r.StartTime = startTime.String
+	r.EndTime = endTime.String
+	r.AllDay = allDay != 0
+	r.RawSource = bodyRaw.String
+	_ = json.Unmarshal([]byte(bydayJSON), &r.ByDay)
+	_ = json.Unmarshal([]byte(bymonthdayJSON), &r.ByMonthDay)
+	_ = json.Unmarshal([]byte(exceptionsJSON), &r.Exceptions)
+	return &r, nil
 }
 
 // ListSeries returns all series ordered by slug.
 func (s *Store) ListSeries() ([]*model.Root, error) {
 	rows, err := s.db.Query(`SELECT id, slug, calendar, title, freq, interval_n,
 		byday_json, bymonthday_json, start_date, until_date,
-		start_time, end_time, all_day, exceptions_json, root_path
+		start_time, end_time, all_day, exceptions_json, root_path, body_raw
 		FROM series ORDER BY slug`)
 	if err != nil {
 		return nil, err
@@ -182,11 +227,11 @@ func (s *Store) ListSeries() ([]*model.Root, error) {
 		var id string
 		var r model.Root
 		var bydayJSON, bymonthdayJSON, exceptionsJSON string
-		var until, startTime, endTime sql.NullString
+		var until, startTime, endTime, bodyRaw sql.NullString
 		var allDay int
 		if err := rows.Scan(&id, &r.Slug, &r.Calendar, &r.Title, &r.Freq, &r.Interval,
 			&bydayJSON, &bymonthdayJSON, &r.StartDate, &until,
-			&startTime, &endTime, &allDay, &exceptionsJSON, &r.Path); err != nil {
+			&startTime, &endTime, &allDay, &exceptionsJSON, &r.Path, &bodyRaw); err != nil {
 			return nil, err
 		}
 		r.ID = id
@@ -194,6 +239,7 @@ func (s *Store) ListSeries() ([]*model.Root, error) {
 		r.StartTime = startTime.String
 		r.EndTime = endTime.String
 		r.AllDay = allDay != 0
+		r.RawSource = bodyRaw.String
 		_ = json.Unmarshal([]byte(bydayJSON), &r.ByDay)
 		_ = json.Unmarshal([]byte(bymonthdayJSON), &r.ByMonthDay)
 		_ = json.Unmarshal([]byte(exceptionsJSON), &r.Exceptions)
@@ -419,11 +465,11 @@ func (s *Store) Wipe() error {
 func scanSeries(row *sql.Row, id string) (*model.Root, error) {
 	var r model.Root
 	var bydayJSON, bymonthdayJSON, exceptionsJSON string
-	var until, startTime, endTime sql.NullString
+	var until, startTime, endTime, bodyRaw sql.NullString
 	var allDay int
 	if err := row.Scan(&r.Slug, &r.Calendar, &r.Title, &r.Freq, &r.Interval,
 		&bydayJSON, &bymonthdayJSON, &r.StartDate, &until,
-		&startTime, &endTime, &allDay, &exceptionsJSON, &r.Path); err != nil {
+		&startTime, &endTime, &allDay, &exceptionsJSON, &r.Path, &bodyRaw); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -434,6 +480,7 @@ func scanSeries(row *sql.Row, id string) (*model.Root, error) {
 	r.StartTime = startTime.String
 	r.EndTime = endTime.String
 	r.AllDay = allDay != 0
+	r.RawSource = bodyRaw.String
 	_ = json.Unmarshal([]byte(bydayJSON), &r.ByDay)
 	_ = json.Unmarshal([]byte(bymonthdayJSON), &r.ByMonthDay)
 	_ = json.Unmarshal([]byte(exceptionsJSON), &r.Exceptions)

@@ -87,6 +87,26 @@ func TestSelfWriteSuppression(t *testing.T) {
 	}
 }
 
+func TestSelfDeleteSuppression(t *testing.T) {
+	v, w := setup(t)
+	path := filepath.Join(v.RecurringDir(), "delete-me.md")
+	if err := os.WriteFile(path, []byte("---\n---\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_ = drain(t, w, 200*time.Millisecond) // consume Changed
+
+	// Mark BEFORE remove — this is the key contract: deletes erase the
+	// inode, so post-syscall stat is too late.
+	w.NotifySelfDelete(path)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+	evs := drain(t, w, 300*time.Millisecond)
+	if len(evs) != 0 {
+		t.Errorf("expected 0 events (self-delete suppressed), got %+v", evs)
+	}
+}
+
 func TestDebounceCoalesce(t *testing.T) {
 	v, w := setup(t)
 	path := filepath.Join(v.RecurringDir(), "rapid.md")

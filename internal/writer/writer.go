@@ -19,12 +19,34 @@ import (
 // raw event it's about to see.
 var SelfWriteNotifier func(path string)
 
+// SelfDeleteNotifier, when non-nil, is called BEFORE a self-initiated
+// os.Remove on path so the watcher can suppress the resulting DELETE
+// event. Callers using a writer-level delete (e.g. the recurring delete
+// CLI) should invoke NotifySelfDelete just before the os.Remove syscall.
+//
+// Why a separate hook from SelfWriteNotifier: writes can be detected
+// post-syscall by comparing mtime; deletes leave nothing to stat, so the
+// watcher needs the heads-up before the inode disappears.
+var SelfDeleteNotifier func(path string)
+
 // NotifySelf calls the notifier if set. Callers doing a non-writer file op
 // (os.Remove, os.Rename) should invoke this before the syscall.
 func NotifySelf(path string) {
 	if SelfWriteNotifier != nil {
 		SelfWriteNotifier(path)
 	}
+}
+
+// NotifySelfDelete marks path as about-to-be-deleted by ourselves. Must be
+// called before the os.Remove syscall. If no SelfDeleteNotifier is wired
+// (e.g. CLI process with no daemon), this falls back to NotifySelf so the
+// in-process watcher (if any) still gets the heads-up.
+func NotifySelfDelete(path string) {
+	if SelfDeleteNotifier != nil {
+		SelfDeleteNotifier(path)
+		return
+	}
+	NotifySelf(path)
 }
 
 // WriteEvent writes e to e.Path with YAML frontmatter + body. Creates parent

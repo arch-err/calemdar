@@ -74,6 +74,7 @@ func ParseRoot(path string) (*Root, error) {
 		return nil, fmt.Errorf("parse %s: yaml: %w", path, err)
 	}
 	r.Body = body
+	r.RawSource = string(raw)
 	r.Path = path
 	r.Slug = strings.TrimSuffix(filepath.Base(path), ".md")
 	return &r, nil

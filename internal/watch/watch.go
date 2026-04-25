@@ -145,6 +145,17 @@ func (w *Watcher) NotifySelfWrite(path string) {
 	w.selfMu.Unlock()
 }
 
+// NotifySelfDelete records a server-initiated delete. MUST be called
+// before the os.Remove syscall — once the inode is gone there's nothing
+// to stat, so we mark TTL-only and let isRecentSelfWrite suppress the
+// resulting DELETE event.
+func (w *Watcher) NotifySelfDelete(path string) {
+	mark := selfWriteMark{at: time.Now(), isRemove: true}
+	w.selfMu.Lock()
+	w.selfWrites[path] = mark
+	w.selfMu.Unlock()
+}
+
 // ---------- internals ----------
 
 func (w *Watcher) addTree(root string) error {

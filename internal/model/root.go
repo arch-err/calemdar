@@ -26,6 +26,11 @@ type Root struct {
 	// expanded event verbatim.
 	Body string `yaml:"-"`
 
+	// RawSource is the full file contents (frontmatter + body) as it was
+	// on disk at parse time. Used for the snapshot column in the series
+	// table — restored verbatim if the root is deleted externally.
+	RawSource string `yaml:"-"`
+
 	// Path is the absolute path to the root file on disk.
 	Path string `yaml:"-"`
 
