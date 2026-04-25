@@ -77,7 +77,8 @@ func WriteRoot(r *model.Root) error {
 }
 
 func writeMarkdown(path string, fmStruct any, body string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	dir := filepath.Dir(path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("write: mkdir: %w", err)
 	}
 
@@ -99,5 +100,34 @@ func writeMarkdown(path string, fmStruct any, body string) error {
 	if !strings.HasSuffix(body, "\n") {
 		out.WriteString("\n")
 	}
-	return os.WriteFile(path, []byte(out.String()), 0o644)
+
+	// Atomic-rename write: write to a sibling temp file in the same
+	// directory, then rename onto the target. This avoids the
+	// truncate-then-write window in os.WriteFile where a crash mid-write
+	// leaves obsidian (and FC) staring at a half-file. Same-directory
+	// rename keeps it atomic on the same filesystem.
+	tmp, err := os.CreateTemp(dir, ".calemdar-tmp-*")
+	if err != nil {
+		return fmt.Errorf("write: temp: %w", err)
+	}
+	tmpName := tmp.Name()
+	if _, err := tmp.WriteString(out.String()); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return fmt.Errorf("write: temp body: %w", err)
+	}
+	if err := tmp.Chmod(0o644); err != nil {
+		tmp.Close()
+		os.Remove(tmpName)
+		return fmt.Errorf("write: chmod: %w", err)
+	}
+	if err := tmp.Close(); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("write: close: %w", err)
+	}
+	if err := os.Rename(tmpName, path); err != nil {
+		os.Remove(tmpName)
+		return fmt.Errorf("write: rename: %w", err)
+	}
+	return nil
 }

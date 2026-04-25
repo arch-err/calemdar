@@ -77,7 +77,12 @@ func Run(ctx context.Context, opts Options) error {
 			return nil
 		case ev, ok := <-w.Events():
 			if !ok {
-				return nil
+				// Watcher closed unexpectedly (fsnotify dropped, kernel
+				// inotify exhaustion, etc.). Don't exit silently with nil
+				// — that looks identical to a clean shutdown to systemd,
+				// so the unit won't restart. Return an error so the user
+				// (and `systemctl status`) sees something is wrong.
+				return fmt.Errorf("watcher events channel closed unexpectedly")
 			}
 			if err := dispatch(opts, ev); err != nil {
 				log.Printf("serve: dispatch %s %s: %v", ev.Source, ev.Path, err)

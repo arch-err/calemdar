@@ -29,9 +29,6 @@ type SchedulerConfig struct {
 	// MaxConcurrentSpawns caps action-runner parallelism so a flurry of
 	// simultaneous fires can't fork-bomb the daemon.
 	MaxConcurrentSpawns int
-	// PruneOlderThan controls how long fired-records are retained. The
-	// nightly loop calls PruneFired with `now - PruneOlderThan`.
-	PruneOlderThan time.Duration
 }
 
 // DefaultSchedulerConfig returns the v1 defaults.
@@ -40,7 +37,6 @@ func DefaultSchedulerConfig() SchedulerConfig {
 		TickInterval:        time.Minute,
 		MaxLead:             23 * time.Hour,
 		MaxConcurrentSpawns: 4,
-		PruneOlderThan:      14 * 24 * time.Hour,
 	}
 }
 
@@ -75,9 +71,6 @@ func NewScheduler(s *store.Store, r *actions.Runner, cfg SchedulerConfig) *Sched
 	}
 	if cfg.MaxConcurrentSpawns <= 0 {
 		cfg.MaxConcurrentSpawns = 4
-	}
-	if cfg.PruneOlderThan <= 0 {
-		cfg.PruneOlderThan = 14 * 24 * time.Hour
 	}
 	return &Scheduler{cfg: cfg, store: s, actions: r}
 }
