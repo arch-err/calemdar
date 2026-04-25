@@ -735,6 +735,78 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deletion-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deletion safety
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deletion safety">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1-sqlite-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — sqlite snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2-filesystem-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — filesystem backup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-3-fsnotify-auto-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3 — fsnotify auto-restore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-not-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does NOT solve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ics-export-deferred-maybe-never" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1029,6 +1101,78 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deletion-safety" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deletion safety
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deletion safety">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#layer-1-sqlite-snapshot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 1 — sqlite snapshot
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-2-filesystem-backup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 2 — filesystem backup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#layer-3-fsnotify-auto-restore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Layer 3 — fsnotify auto-restore
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cli-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI surface
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-this-does-not-solve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this does NOT solve
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#ics-export-deferred-maybe-never" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1170,22 +1314,24 @@ The cache exists to make lookups fast. If deleted, the server rebuilds it.</p>
 <a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span><span class="n">all_day</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">        </span><span class="c1">-- 0 or 1</span>
 <a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span><span class="n">exceptions</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                 </span><span class="c1">-- JSON array</span>
 <a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">  </span><span class="n">root_path</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">         </span><span class="c1">-- relative path for quick lookup</span>
-<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">  </span><span class="n">root_mtime</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="w">      </span><span class="c1">-- unix seconds</span>
-<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="p">);</span>
-<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
-<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">occurrences</span><span class="w"> </span><span class="p">(</span>
-<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">  </span><span class="n">path</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">           </span><span class="c1">-- relative path from vault root</span>
-<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">  </span><span class="n">series_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                  </span><span class="c1">-- nullable for one-offs</span>
-<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="nb">date</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">              </span><span class="c1">-- YYYY-MM-DD</span>
-<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="n">calendar</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="n">user_owned</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
-<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">  </span><span class="n">expanded_at</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">       </span><span class="c1">-- RFC 3339</span>
-<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span><span class="n">server_last_write</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="c1">-- unix seconds</span>
-<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">  </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">series_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">series</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
-<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="p">);</span>
-<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
-<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">occurrences_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">occurrences</span><span class="p">(</span><span class="nb">date</span><span class="p">);</span>
-<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">occurrences_series</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">occurrences</span><span class="p">(</span><span class="n">series_id</span><span class="p">);</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">  </span><span class="n">root_mtime</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">     </span><span class="c1">-- unix seconds</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">  </span><span class="n">body_raw</span><span class="w"> </span><span class="nb">TEXT</span><span class="w">                    </span><span class="c1">-- full file contents (frontmatter + body)</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">                                   </span><span class="c1">-- snapshot for delete-safeguard auto-restore</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="p">);</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">TABLE</span><span class="w"> </span><span class="n">occurrences</span><span class="w"> </span><span class="p">(</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">  </span><span class="n">path</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">PRIMARY</span><span class="w"> </span><span class="k">KEY</span><span class="p">,</span><span class="w">           </span><span class="c1">-- relative path from vault root</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span><span class="n">series_id</span><span class="w"> </span><span class="nb">TEXT</span><span class="p">,</span><span class="w">                  </span><span class="c1">-- nullable for one-offs</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span><span class="nb">date</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">              </span><span class="c1">-- YYYY-MM-DD</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">  </span><span class="n">calendar</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span><span class="n">user_owned</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">  </span><span class="n">expanded_at</span><span class="w"> </span><span class="nb">TEXT</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w">       </span><span class="c1">-- RFC 3339</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">  </span><span class="n">server_last_write</span><span class="w"> </span><span class="nb">INTEGER</span><span class="w"> </span><span class="k">NOT</span><span class="w"> </span><span class="k">NULL</span><span class="p">,</span><span class="w"> </span><span class="c1">-- unix seconds</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">  </span><span class="k">FOREIGN</span><span class="w"> </span><span class="k">KEY</span><span class="w"> </span><span class="p">(</span><span class="n">series_id</span><span class="p">)</span><span class="w"> </span><span class="k">REFERENCES</span><span class="w"> </span><span class="n">series</span><span class="p">(</span><span class="n">id</span><span class="p">)</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="p">);</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">occurrences_date</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">occurrences</span><span class="p">(</span><span class="nb">date</span><span class="p">);</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="k">CREATE</span><span class="w"> </span><span class="k">INDEX</span><span class="w"> </span><span class="n">occurrences_series</span><span class="w"> </span><span class="k">ON</span><span class="w"> </span><span class="n">occurrences</span><span class="p">(</span><span class="n">series_id</span><span class="p">);</span>
 </code></pre></div>
 <h2 id="cli-surface-v1">CLI surface (v1)<a class="headerlink" href="#cli-surface-v1" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>calemdar serve                     # run the watcher + nightly timers
@@ -1205,8 +1351,12 @@ The cache exists to make lookups fast. If deleted, the server rebuilds it.</p>
 <a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>calemdar series show &lt;id-or-slug&gt;
 <a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>calemdar series except &lt;id&gt; &lt;date&gt; # add to exceptions list
 <a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
-<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>calemdar config path|show|init|edit
-<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>calemdar notify test               # one-shot ntfy test push
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>calemdar recurring restore &lt;slug&gt;  # from .calemdar/backup/recurring/
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>calemdar recurring backup-list
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>calemdar config path|show|init|edit
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>calemdar notify test               # one-shot ntfy test push
 </code></pre></div>
 <h2 id="concurrency-sync">Concurrency / sync<a class="headerlink" href="#concurrency-sync" title="Permanent link">&para;</a></h2>
 <ul>
@@ -1295,6 +1445,64 @@ kills runaway scripts.</p>
 <li><code>calemdar notify test [backend]</code> — fire a test through every enabled
   backend, or just one named.</li>
 <li><code>calemdar notify actions</code> — list registered actions.</li>
+</ul>
+<h2 id="deletion-safety">Deletion safety<a class="headerlink" href="#deletion-safety" title="Permanent link">&para;</a></h2>
+<p>A recurring root is the source of truth for an entire series. A single
+errant <code>rm</code> (or sync-peer delete, or accidental Obsidian "delete file"
+click) destroys the template that every future occurrence is expanded
+from. v1.1 adds a three-layer safeguard.</p>
+<h3 id="layer-1-sqlite-snapshot">Layer 1 — sqlite snapshot<a class="headerlink" href="#layer-1-sqlite-snapshot" title="Permanent link">&para;</a></h3>
+<p>The <code>series</code> table carries a <code>body_raw</code> column that holds the full file
+contents (frontmatter + body) as it was on disk at the most recent
+parse. Every <code>UpsertSeries</code> rewrites this snapshot, so the cache is
+always at-most-one-edit-stale. This is the recovery source.</p>
+<p>The cache file lives at <code>&lt;vault&gt;/.calemdar/cache.db</code> — laptop-local,
+NOT synced. That's intentional: a sync-peer delete wipes the file but
+not the snapshot.</p>
+<h3 id="layer-2-filesystem-backup">Layer 2 — filesystem backup<a class="headerlink" href="#layer-2-filesystem-backup" title="Permanent link">&para;</a></h3>
+<p>Before the daemon rewrites a deleted root from the snapshot, it mirrors
+the snapshot to:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>&lt;vault&gt;/.calemdar/backup/recurring/&lt;slug&gt;-&lt;RFC3339-utc&gt;.md
+</code></pre></div>
+<p>The <code>recurring delete</code> CLI also writes a backup before removing the
+file. Backups accumulate; nothing prunes them automatically. The
+<code>recurring backup-list</code> CLI prints what's there.</p>
+<p><code>.calemdar/</code> is excluded from sync by convention (Syncthing ignore the
+folder) — backups are per-laptop, intentional.</p>
+<h3 id="layer-3-fsnotify-auto-restore">Layer 3 — fsnotify auto-restore<a class="headerlink" href="#layer-3-fsnotify-auto-restore" title="Permanent link">&para;</a></h3>
+<p>The watcher already had <code>NotifySelfWrite</code> to suppress events for files
+the daemon itself wrote. v1.1 adds <code>NotifySelfDelete</code>, which marks a
+path as "about to be deleted by us" before the syscall — required
+because deletes erase the inode, leaving nothing to stat afterwards.</p>
+<p>When fsnotify fires DELETE on <code>&lt;base&gt;/recurring/&lt;slug&gt;.md</code>:</p>
+<ul>
+<li><strong>Self-delete flag set</strong> → no-op. The CLI's <code>recurring delete</code> is the
+  only caller that sets it.</li>
+<li><strong>Flag NOT set</strong> → external delete. Daemon logs a WARNING, mirrors
+  the sqlite snapshot to the backup dir, and rewrites the root file
+  from the snapshot. Single-shot — if the same path gets deleted again
+  immediately, fsnotify fires again and we restore again. We don't loop
+  internally and we don't try to outpace a sync conflict.</li>
+</ul>
+<h3 id="cli-surface">CLI surface<a class="headerlink" href="#cli-surface" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]</code> — proper
+  cleanup: backup → optional event cascade → file remove (with
+  self-delete flag) → sqlite cleanup. Past events are never touched;
+  user-owned events are preserved even with <code>--purge-events</code>.</li>
+<li><code>calemdar recurring restore &lt;slug&gt;</code> — re-materialises the most recent
+  backup as <code>recurring/&lt;slug&gt;.md</code>. Refuses to overwrite.</li>
+<li><code>calemdar recurring backup-list</code> — inventory.</li>
+</ul>
+<h3 id="what-this-does-not-solve">What this does NOT solve<a class="headerlink" href="#what-this-does-not-solve" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Sync conflict files in <code>recurring/</code> (<code>.sync-conflict-*</code>). Out of
+  scope; surfaced in logs already.</li>
+<li>Truly out-of-band file corruption (disk error). The snapshot is
+  fresh-as-of-last-edit, so up to one edit can be lost on restore.</li>
+<li>Multi-device race where two laptops both write conflicting versions
+  of the same root. v1 already specifies "only one device runs the
+  daemon"; sync resolves the rest as normal Syncthing conflicts.</li>
 </ul>
 <h2 id="ics-export-deferred-maybe-never">ICS export (deferred, maybe-never)<a class="headerlink" href="#ics-export-deferred-maybe-never" title="Permanent link">&para;</a></h2>
 <ul>

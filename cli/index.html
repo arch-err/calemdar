@@ -599,6 +599,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#calemdar-recurring-delete-id-or-slug-purge-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-recurring-restore-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring restore &lt;slug&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-recurring-backup-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring backup-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#calemdar-series-except-id-or-slug-date" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1074,6 +1107,39 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#calemdar-recurring-delete-id-or-slug-purge-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-recurring-restore-slug" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring restore &lt;slug&gt;
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-recurring-backup-list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar recurring backup-list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#calemdar-series-except-id-or-slug-date" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1336,11 +1402,36 @@ at <code>archive/</code>.</p>
 <p>Detailed view of one series — every frontmatter field plus the file path.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>calemdar<span class="w"> </span>series<span class="w"> </span>show<span class="w"> </span>workout
 </code></pre></div>
+<h3 id="calemdar-recurring-delete-id-or-slug-purge-events"><code>calemdar recurring delete &lt;id-or-slug&gt; [--purge-events]</code><a class="headerlink" href="#calemdar-recurring-delete-id-or-slug-purge-events" title="Permanent link">&para;</a></h3>
+<p>Safe-delete a recurring root. Drops a backup copy under
+<code>&lt;vault&gt;/.calemdar/backup/recurring/&lt;slug&gt;-&lt;RFC3339-utc&gt;.md</code> (laptop-local,
+not synced), removes the root file with the self-delete flag set so the
+watcher does NOT auto-restore, and clears the sqlite series row.</p>
+<p>With <code>--purge-events</code>, also removes future non-user-owned expanded
+events for this series. Past events stay (archive-bound). User-owned
+events are always preserved — they stand on their own once the user has
+edited them.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>delete<span class="w"> </span>workout<span class="w"> </span>--purge-events
+</code></pre></div>
+<h3 id="calemdar-recurring-restore-slug"><code>calemdar recurring restore &lt;slug&gt;</code><a class="headerlink" href="#calemdar-recurring-restore-slug" title="Permanent link">&para;</a></h3>
+<p>Find the most recent backup matching <code>&lt;slug&gt;-*.md</code> under
+<code>&lt;vault&gt;/.calemdar/backup/recurring/</code> and copy it back to
+<code>recurring/&lt;slug&gt;.md</code>. Refuses to overwrite an existing root — move it
+out of the way first.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>restore<span class="w"> </span>workout
+</code></pre></div>
+<p>The daemon (if running) will pick up the new file via fsnotify and
+reconcile. If you're running standalone, follow up with <code>calemdar reindex</code>.</p>
+<h3 id="calemdar-recurring-backup-list"><code>calemdar recurring backup-list</code><a class="headerlink" href="#calemdar-recurring-backup-list" title="Permanent link">&para;</a></h3>
+<p>List every recurring backup, grouped by slug, newest first.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>calemdar<span class="w"> </span>recurring<span class="w"> </span>backup-list
+</code></pre></div>
 <h3 id="calemdar-series-except-id-or-slug-date"><code>calemdar series except &lt;id-or-slug&gt; &lt;date&gt;</code><a class="headerlink" href="#calemdar-series-except-id-or-slug-date" title="Permanent link">&para;</a></h3>
 <p>Add a date to the series' <code>exceptions</code> list and reconcile. The occurrence
 on that date is dropped (or swept if already materialised and not
 user-owned).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>calemdar<span class="w"> </span>series<span class="w"> </span>except<span class="w"> </span>workout<span class="w"> </span><span class="m">2026</span>-06-24
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>calemdar<span class="w"> </span>series<span class="w"> </span>except<span class="w"> </span>workout<span class="w"> </span><span class="m">2026</span>-06-24
 </code></pre></div>
 <p>Warns if <code>&lt;date&gt;</code> is in the past — past occurrences are immutable, so the
 exception will have no effect on them.</p>
@@ -1349,18 +1440,18 @@ exception will have no effect on them.</p>
 <p>Interactive prompt-driven one-off event creation. Writes directly under
 <code>events/&lt;calendar&gt;/&lt;YYYY-MM-DD&gt;-&lt;slug&gt;.md</code> with no <code>series-id</code> — the
 daemon will not touch it.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>new
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>new
 </code></pre></div>
 <h3 id="calemdar-event-list-rangerange"><code>calemdar event list [--range=&lt;range&gt;]</code><a class="headerlink" href="#calemdar-event-list-rangerange" title="Permanent link">&para;</a></h3>
 <p>List events in a date range.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>today
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>week<span class="w">       </span><span class="c1"># default</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>month
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>all
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>today
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>week<span class="w">       </span><span class="c1"># default</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>month
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>calemdar<span class="w"> </span>event<span class="w"> </span>list<span class="w"> </span>--range<span class="o">=</span>all
 </code></pre></div>
 <h3 id="calemdar-event-show-path"><code>calemdar event show &lt;path&gt;</code><a class="headerlink" href="#calemdar-event-show-path" title="Permanent link">&para;</a></h3>
 <p>Detailed view of one event. Path can be absolute or relative to the vault.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>show<span class="w"> </span>events/health/2026-05-03-workout.md
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>show<span class="w"> </span>events/health/2026-05-03-workout.md
 </code></pre></div>
 <h2 id="notifications">Notifications<a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h2>
 <p>Per-event rules live in event/root frontmatter (<code>notify:</code> — see
@@ -1372,9 +1463,9 @@ subcommands help set up and verify the wiring.</p>
 <p>Fire a test message through every enabled backend, or one named.
 Bypasses the schedule layer entirely — the point is to prove backend
 wiring before any rule actually fires.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w">           </span><span class="c1"># every enabled backend</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>ntfy<span class="w">      </span><span class="c1"># restrict to ntfy</span>
-<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>system<span class="w">    </span><span class="c1"># restrict to system (notify-send)</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w">           </span><span class="c1"># every enabled backend</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>ntfy<span class="w">      </span><span class="c1"># restrict to ntfy</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>system<span class="w">    </span><span class="c1"># restrict to system (notify-send)</span>
 </code></pre></div>
 <p>Errors if no matching backend is enabled or configured.</p>
 <h3 id="calemdar-notify-actions"><code>calemdar notify actions</code><a class="headerlink" href="#calemdar-notify-actions" title="Permanent link">&para;</a></h3>
@@ -1382,30 +1473,30 @@ wiring before any rule actually fires.</p>
 <code>~/.config/calemdar/actions.yaml</code> (or the path set in
 <code>notifications.actions.config_path</code>). Useful for confirming a name is
 known before referencing it in a <code>notify:</code> rule.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span>actions
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span>actions
 </code></pre></div>
 <h2 id="config">Config<a class="headerlink" href="#config" title="Permanent link">&para;</a></h2>
 <h3 id="calemdar-config-path"><code>calemdar config path</code><a class="headerlink" href="#calemdar-config-path" title="Permanent link">&para;</a></h3>
 <p>Print the config file lookup path (does not check existence).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>path
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>path
 </code></pre></div>
 <h3 id="calemdar-config-show"><code>calemdar config show</code><a class="headerlink" href="#calemdar-config-show" title="Permanent link">&para;</a></h3>
 <p>Print the active config — defaults merged with the file on disk. If no
 file exists, prints defaults with a note at the top.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>show
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>show
 </code></pre></div>
 <h3 id="calemdar-config-init-override"><code>calemdar config init [--override]</code><a class="headerlink" href="#calemdar-config-init-override" title="Permanent link">&para;</a></h3>
 <p>Write a default config file. Errors if one already exists, unless
 <code>--override</code> is passed. Drops into <code>$EDITOR</code> after writing if <code>$EDITOR</code>
 is set.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init
-<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--override<span class="w">    </span><span class="c1"># overwrite an existing file</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--override<span class="w">    </span><span class="c1"># overwrite an existing file</span>
 </code></pre></div>
 <h3 id="calemdar-config-edit"><code>calemdar config edit</code><a class="headerlink" href="#calemdar-config-edit" title="Permanent link">&para;</a></h3>
 <p>Open the config in <code>$EDITOR</code> and validate on save. If the file does not
 exist, a default stub is written first. Invalid YAML or out-of-range
 values print diagnostics and leave the in-process config unchanged.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>edit
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>edit
 </code></pre></div>
 
 
