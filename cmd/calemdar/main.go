@@ -10,6 +10,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// Build-time metadata, populated by goreleaser via -ldflags "-X main.version=...".
+// When built without ldflags (e.g. plain `go build` / `go install`) these stay
+// empty; `--version` then falls back to "dev".
+var (
+	version = ""
+	commit  = ""
+	date    = ""
+)
+
+// versionString renders what `calemdar --version` prints. Falls back to "dev"
+// when ldflags weren't applied so local builds still answer the flag.
+func versionString() string {
+	v := version
+	if v == "" {
+		v = "dev"
+	}
+	if commit == "" && date == "" {
+		return v
+	}
+	return fmt.Sprintf("%s (commit %s, built %s)", v, commit, date)
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "calemdar",
 	Short: "Recurring-event manager for Obsidian Full Calendar",
@@ -18,6 +40,7 @@ var rootCmd = &cobra.Command{
 	// Don't print usage on runtime errors; cobra only shows Usage on flag
 	// parse errors, which is what that message is for.
 	SilenceUsage: true,
+	Version:      versionString(),
 }
 
 func main() {
