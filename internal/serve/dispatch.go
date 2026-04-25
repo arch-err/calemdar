@@ -7,8 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/arch-err/calemdar/internal/autoown"
+	"github.com/arch-err/calemdar/internal/backup"
 	"github.com/arch-err/calemdar/internal/fcparse"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/reactor"
@@ -16,6 +18,7 @@ import (
 	"github.com/arch-err/calemdar/internal/series"
 	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/arch-err/calemdar/internal/watch"
+	"github.com/arch-err/calemdar/internal/writer"
 )
 
 func dispatch(opts Options, ev watch.Event) error {
@@ -30,12 +33,12 @@ func dispatch(opts Options, ev watch.Event) error {
 
 // dispatchRecurring handles changes to roots in recurring/.
 //   - Changed: parse, reconcile, upsert series + occurrences in store.
-//   - Deleted: leave events alone (past may matter); purge series from store.
-//     Caller can `calemdar reindex` to GC dangling occurrences if desired.
+//   - Deleted (external): try to restore from the sqlite snapshot and
+//     drop a copy in the laptop-local backup dir. If the snapshot is
+//     missing (pre-snapshot DB / never reconciled), log and bail.
 func dispatchRecurring(opts Options, ev watch.Event) error {
 	if ev.Kind == watch.Deleted {
-		log.Printf("serve: recurring deleted: %s (events left in place; run `calemdar reindex` to clean store)", ev.Path)
-		return nil
+		return handleRecurringDelete(opts, ev.Path)
 	}
 	r, err := model.ParseRoot(ev.Path)
 	if err != nil {
@@ -124,6 +127,54 @@ func handleFCRecurring(opts Options, path string) error {
 			}
 		}
 	}
+	return nil
+}
+
+// handleRecurringDelete is the auto-restore path for an externally
+// deleted recurring root. Self-deletes are already swallowed by the
+// watcher (see writer.NotifySelfDelete + watch.NotifySelfDelete) — by
+// the time we get here the delete is, definitionally, not ours.
+//
+// Restore strategy: look up the series by root_path in the sqlite
+// cache, get the body_raw snapshot, mirror it to the backup dir, and
+// rewrite the file. Single-shot — if a sync peer immediately deletes
+// again, we'll get a fresh DELETE event and try again; we don't loop
+// internally.
+func handleRecurringDelete(opts Options, path string) error {
+	r, err := opts.Store.GetSeriesByPath(path)
+	if err != nil {
+		return fmt.Errorf("recurring delete: store lookup: %w", err)
+	}
+	if r == nil {
+		log.Printf("serve: recurring deleted (no snapshot): %s — events left in place; run `calemdar reindex` to clean store", path)
+		return nil
+	}
+	if r.RawSource == "" {
+		log.Printf("serve: recurring deleted: %s (slug=%s) — snapshot missing, can't restore. run `calemdar reindex` after recreating the file", path, r.Slug)
+		return nil
+	}
+
+	// Mirror the snapshot to the backup dir BEFORE the rewrite — if the
+	// rewrite fails the user still has a copy.
+	bkp, berr := backup.WriteFromBytes(opts.Vault, r.Slug, []byte(r.RawSource), time.Now())
+	if berr != nil {
+		log.Printf("serve: backup write failed for %s: %v", path, berr)
+	} else {
+		log.Printf("serve: recurring backup written: %s", bkp)
+	}
+
+	log.Printf("serve: WARNING — external delete on recurring root %s (slug=%s); auto-restoring from snapshot", path, r.Slug)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return fmt.Errorf("recurring restore: mkdir: %w", err)
+	}
+	if err := os.WriteFile(path, []byte(r.RawSource), 0o644); err != nil {
+		return fmt.Errorf("recurring restore: write: %w", err)
+	}
+	// The follow-up CREATE will land back here as Changed, which will
+	// reconcile + UpsertSeries (refreshing the body_raw snapshot from disk).
+	// Tell the watcher this write is ours so we don't loop on the
+	// reconcile path either.
+	writer.NotifySelf(path)
 	return nil
 }
 

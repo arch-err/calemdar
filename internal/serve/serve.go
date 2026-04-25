@@ -44,7 +44,11 @@ func Run(ctx context.Context, opts Options) error {
 
 	// Install self-write notifier for every writer.Write* / NotifySelf call.
 	writer.SelfWriteNotifier = w.NotifySelfWrite
-	defer func() { writer.SelfWriteNotifier = nil }()
+	writer.SelfDeleteNotifier = w.NotifySelfDelete
+	defer func() {
+		writer.SelfWriteNotifier = nil
+		writer.SelfDeleteNotifier = nil
+	}()
 
 	// Initial sync: fresh reindex so the store matches disk.
 	if rep, err := opts.Store.Reindex(opts.Vault); err != nil {
