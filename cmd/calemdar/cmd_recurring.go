@@ -120,6 +120,16 @@ func runRecurringDelete(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("series %q not found", args[0])
 	}
 
+	// Open the store FIRST and hold the handle. If sqlite open fails
+	// after we've removed the root file, the body_raw snapshot is gone
+	// with no recovery path. Open up-front so we fail loudly before any
+	// disk mutation.
+	s, err := store.Open(v)
+	if err != nil {
+		return fmt.Errorf("store open: %w", err)
+	}
+	defer s.Close()
+
 	// Snapshot the current root before we touch anything.
 	if _, berr := backup.WriteFromFile(v, r.Slug, r.Path, time.Now()); berr != nil {
 		// Don't fail the whole delete on backup failure — the sqlite
@@ -168,20 +178,14 @@ func runRecurringDelete(cmd *cobra.Command, args []string) error {
 	}
 
 	// Sqlite cleanup: drop the series row + any occurrence rows we just
-	// removed from disk. If a fresh reindex runs, it'll match this state.
-	s, err := store.Open(v)
-	if err != nil {
-		// Non-fatal — file delete already succeeded; user can `reindex`.
-		fmt.Fprintf(os.Stderr, "warn: store open failed: %v (run `calemdar reindex`)\n", err)
-	} else {
-		defer s.Close()
-		if err := s.DeleteSeries(r.ID); err != nil {
-			fmt.Fprintf(os.Stderr, "warn: store delete series: %v\n", err)
-		}
-		for _, p := range purgedPaths {
-			if err := s.DeleteOccurrence(p); err != nil {
-				fmt.Fprintf(os.Stderr, "warn: store delete occurrence %s: %v\n", p, err)
-			}
+	// removed from disk. The store handle was opened up-front (before any
+	// disk mutation) so we know it's healthy here.
+	if err := s.DeleteSeries(r.ID); err != nil {
+		fmt.Fprintf(os.Stderr, "warn: store delete series: %v\n", err)
+	}
+	for _, p := range purgedPaths {
+		if err := s.DeleteOccurrence(p); err != nil {
+			fmt.Fprintf(os.Stderr, "warn: store delete occurrence %s: %v\n", p, err)
 		}
 	}
 

@@ -122,6 +122,7 @@ func StartWithDebounce(v *vault.Vault, debounce time.Duration) (*Watcher, error)
 	}
 
 	go w.loop()
+	go w.gcLoop()
 	return w, nil
 }
 
@@ -183,6 +184,35 @@ func (w *Watcher) addTree(root string) error {
 		}
 		return w.fs.Add(path)
 	})
+}
+
+// gcLoop periodically sweeps the selfWrites map for expired marks. The
+// hot-path isRecentSelfWrite only prunes the entry it looked up, so
+// paths that never re-fire would otherwise leak forever (long-running
+// daemons creating then never re-touching files). Cheap full-map walk
+// at the same cadence as the suppression TTL.
+func (w *Watcher) gcLoop() {
+	ticker := time.NewTicker(w.ttl)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-w.done:
+			return
+		case <-ticker.C:
+			w.pruneSelfWrites()
+		}
+	}
+}
+
+func (w *Watcher) pruneSelfWrites() {
+	w.selfMu.Lock()
+	defer w.selfMu.Unlock()
+	now := time.Now()
+	for k, m := range w.selfWrites {
+		if now.Sub(m.at) > w.ttl {
+			delete(w.selfWrites, k)
+		}
+	}
 }
 
 func (w *Watcher) loop() {
