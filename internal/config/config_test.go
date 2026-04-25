@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestLoadMissingFileReturnsDefaults(t *testing.T) {
@@ -66,7 +67,6 @@ func TestLoadPartialMerge(t *testing.T) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	// Only vault set; other keys should fall back to defaults.
 	if err := os.WriteFile(path, []byte("vault: /tmp/v\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -90,36 +90,53 @@ func TestNotificationsDefaults(t *testing.T) {
 	if d.Notifications.Enabled {
 		t.Error("Enabled should default to false")
 	}
-	if len(d.Notifications.LeadMinutes) != 2 ||
-		d.Notifications.LeadMinutes[0] != 5 ||
-		d.Notifications.LeadMinutes[1] != 60 {
-		t.Errorf("LeadMinutes = %v, want [5 60]", d.Notifications.LeadMinutes)
+	if d.Notifications.TickInterval.AsDuration() != time.Minute {
+		t.Errorf("TickInterval = %v, want 1m", d.Notifications.TickInterval.AsDuration())
+	}
+	if d.Notifications.MaxLead.AsDuration() != 23*time.Hour {
+		t.Errorf("MaxLead = %v, want 23h", d.Notifications.MaxLead.AsDuration())
+	}
+	if d.Notifications.MaxConcurrentSpawns != 4 {
+		t.Errorf("MaxConcurrentSpawns = %d, want 4", d.Notifications.MaxConcurrentSpawns)
 	}
 }
 
-func TestNotificationsValidateRequiresURLAndTopicWhenEnabled(t *testing.T) {
+func TestNotificationsValidateNtfyRequiresURLAndTopicWhenEnabled(t *testing.T) {
 	c := Defaults()
 	c.Vault = "/tmp/v"
 	c.Notifications.Enabled = true
+	c.Notifications.Backends.Ntfy.Enabled = true
 	if err := c.Validate(); err == nil {
-		t.Error("expected error when enabled without url/topic")
+		t.Error("expected error when ntfy enabled without url/topic")
 	}
-	c.Notifications.NtfyURL = "https://ntfy.sh"
-	c.Notifications.NtfyTopic = "t"
+	c.Notifications.Backends.Ntfy.URL = "https://ntfy.sh"
+	c.Notifications.Backends.Ntfy.Topic = "t"
 	if err := c.Validate(); err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
 }
 
-func TestNotificationsValidateLeadMinutesPositive(t *testing.T) {
+func TestNotificationsValidateTickInterval(t *testing.T) {
 	c := Defaults()
-	c.Notifications.LeadMinutes = []int{5, 0, 60}
+	c.Vault = "/tmp/v"
+	c.Notifications.Enabled = true
+	c.Notifications.TickInterval = Duration(15 * time.Second) // below minimum
 	if err := c.Validate(); err == nil {
-		t.Error("expected error for zero lead minute")
+		t.Error("expected error for tick_interval below 30s")
 	}
-	c.Notifications.LeadMinutes = []int{-1}
+}
+
+func TestNotificationsValidateUrgency(t *testing.T) {
+	c := Defaults()
+	c.Vault = "/tmp/v"
+	c.Notifications.Enabled = true
+	c.Notifications.Backends.System.Urgency = "weird"
 	if err := c.Validate(); err == nil {
-		t.Error("expected error for negative lead minute")
+		t.Error("expected error for unknown urgency")
+	}
+	c.Notifications.Backends.System.Urgency = "low"
+	if err := c.Validate(); err != nil {
+		t.Errorf("unexpected error: %v", err)
 	}
 }
 
@@ -134,10 +151,19 @@ func TestNotificationsMergeFromFile(t *testing.T) {
 	yaml := `vault: /tmp/my-vault
 notifications:
   enabled: true
-  ntfy_url: https://ntfy.example
-  ntfy_topic: topic-abc
-  lead_minutes: [10, 30]
+  tick_interval: 2m
+  max_lead: 12h
   calendars: [work]
+  backends:
+    system:
+      enabled: true
+      urgency: low
+    ntfy:
+      enabled: true
+      url: https://ntfy.example
+      topic: topic-abc
+  actions:
+    enabled: true
 `
 	if err := os.WriteFile(path, []byte(yaml), 0o644); err != nil {
 		t.Fatal(err)
@@ -149,14 +175,20 @@ notifications:
 	if !cfg.Notifications.Enabled {
 		t.Error("Enabled should be true")
 	}
-	if cfg.Notifications.NtfyURL != "https://ntfy.example" {
-		t.Errorf("NtfyURL = %q", cfg.Notifications.NtfyURL)
+	if cfg.Notifications.TickInterval.AsDuration() != 2*time.Minute {
+		t.Errorf("TickInterval = %v", cfg.Notifications.TickInterval.AsDuration())
 	}
-	if cfg.Notifications.NtfyTopic != "topic-abc" {
-		t.Errorf("NtfyTopic = %q", cfg.Notifications.NtfyTopic)
+	if !cfg.Notifications.Backends.System.Enabled {
+		t.Error("system.enabled should be true")
 	}
-	if len(cfg.Notifications.LeadMinutes) != 2 || cfg.Notifications.LeadMinutes[0] != 10 {
-		t.Errorf("LeadMinutes = %v", cfg.Notifications.LeadMinutes)
+	if cfg.Notifications.Backends.Ntfy.URL != "https://ntfy.example" {
+		t.Errorf("ntfy.url = %q", cfg.Notifications.Backends.Ntfy.URL)
+	}
+	if cfg.Notifications.Backends.Ntfy.Topic != "topic-abc" {
+		t.Errorf("ntfy.topic = %q", cfg.Notifications.Backends.Ntfy.Topic)
+	}
+	if !cfg.Notifications.Actions.Enabled {
+		t.Error("actions.enabled should be true")
 	}
 	if len(cfg.Notifications.Calendars) != 1 || cfg.Notifications.Calendars[0] != "work" {
 		t.Errorf("Calendars = %v", cfg.Notifications.Calendars)

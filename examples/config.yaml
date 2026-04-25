@@ -36,16 +36,41 @@ calendars:
   - friends-family
   - special
 
-# Upcoming-event push notifications via ntfy. When enabled, the daemon
-# POSTs to <ntfy_url>/<ntfy_topic> for every event whose start time falls
-# inside one of the `lead_minutes` windows.
+# Per-event notifications. Per-event rules live in event/root frontmatter
+# as a `notify:` list (see docs/schema.md). This block governs the
+# daemon side: which backends are available, scheduler cadence, the
+# action runner.
 notifications:
   enabled: false
-  # Base URL for the ntfy server. Public server or self-hosted.
-  # ntfy_url: https://ntfy.sh
-  # Topic name. Keep it unguessable if the server is public.
-  # ntfy_topic: my-private-calemdar-topic
-  # Minutes before an event to push. Defaults to [5, 60].
-  # lead_minutes: [5, 60]
-  # Only notify for events in these calendars. Empty = all calendars.
-  # calendars: []
+
+  # Scheduler cadence. 1m is a good default. Below 30s is rejected.
+  tick_interval: 1m
+
+  # Caps the longest per-rule lead the scheduler will honour.
+  # Hard ceiling: 24h.
+  max_lead: 23h
+
+  # Caps the action runner's parallelism.
+  max_concurrent_spawns: 4
+
+  # Restrict the scheduler to events in these calendars. Empty = all.
+  calendars: []
+
+  backends:
+    # Linux desktop notifications via notify-send.
+    system:
+      enabled: false
+      # binary_path: /usr/bin/notify-send
+      # urgency: low      # low | normal | critical
+
+    # ntfy.sh / self-hosted ntfy.
+    ntfy:
+      enabled: false
+      # url: https://ntfy.sh
+      # topic: my-private-calemdar-topic
+
+  # Action runner. Disabled by default — vault frontmatter cannot fire
+  # scripts unless you opt in. See docs/actions.md.
+  actions:
+    enabled: false
+    # config_path: ~/.config/calemdar/actions.yaml

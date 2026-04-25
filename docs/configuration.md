@@ -133,19 +133,34 @@ calendars:
 
 ### `notifications`
 
-Upcoming-event push notifications via [ntfy](https://ntfy.sh). When
-enabled, the `serve` daemon runs a 60-second ticker that queries the
-store for upcoming events and POSTs to `<ntfy_url>/<ntfy_topic>` when a
-start time crosses one of the configured lead-minute windows. All-day
-events are skipped (no natural trigger time).
+Per-event notifications. Each event (or recurring root) declares its
+own `notify:` rules in the markdown frontmatter — see [Schema](schema.md)
+— and the daemon dispatches them through one or more **backends**
+(currently `system` for libnotify-via-`notify-send`, and `ntfy` for
+ntfy.sh / self-hosted ntfy). A rule may also reference a named **action**
+that runs a local script when fired.
 
 ```yaml
 notifications:
   enabled: true
-  ntfy_url: https://ntfy.sh
-  ntfy_topic: my-private-calemdar-topic
-  lead_minutes: [5, 60]   # default
+  tick_interval: 1m
+  max_lead: 23h
+  max_concurrent_spawns: 4
   calendars: []           # empty = all calendars
+
+  backends:
+    system:
+      enabled: true
+      # binary_path: /usr/bin/notify-send   # override the default lookup
+      # urgency: low                         # low | normal | critical
+    ntfy:
+      enabled: true
+      url: https://ntfy.sh
+      topic: my-private-calemdar-topic
+
+  actions:
+    enabled: false                            # opt-in
+    # config_path: ~/.config/calemdar/actions.yaml
 ```
 
 #### `notifications.enabled`
@@ -153,49 +168,81 @@ notifications:
 **Type:** boolean
 **Default:** `false`
 
-Switch. When `false`, the daemon does nothing ntfy-related regardless of
-the other fields.
+Master switch. With this off, the daemon never runs the scheduler — no
+backend is registered, no action runs, no `notify:` rule fires.
 
-#### `notifications.ntfy_url`
+#### `notifications.tick_interval`
 
-**Type:** string (URL)
-**Default:** none — required when `enabled`
+**Type:** duration string (`30s`, `1m`, `5m`)
+**Default:** `1m`
 
-Base URL of the ntfy server. Public `https://ntfy.sh` works; self-hosted
-instances work too.
+How often the scheduler wakes up. Per-rule fire times are quantised to
+this interval, so a `lead: 5m` rule fires within `tick_interval` of the
+intended moment. Values below `30s` are rejected.
 
-#### `notifications.ntfy_topic`
+#### `notifications.max_lead`
 
-**Type:** string
-**Default:** none — required when `enabled`
+**Type:** duration string (`5m`, `1h`, `23h`)
+**Default:** `23h`
 
-Topic name appended to `ntfy_url`. Keep it unguessable if the server is
-public — anyone with the topic name can read and write.
+Caps the longest per-rule lead the scheduler will scan for. The cap
+exists so the lookahead query stays scoped to roughly today's events.
+Hard ceiling: 24h.
 
-#### `notifications.lead_minutes`
+#### `notifications.max_concurrent_spawns`
 
-**Type:** list of positive integers
-**Default:** `[5, 60]`
+**Type:** integer
+**Default:** `4`
 
-Minutes before an event to push. Each value produces its own notification.
-`[5, 60]` pushes once an hour out and once five minutes out.
+Caps the action runner's parallelism. A flurry of fires that all carry
+an action will queue at this depth.
 
 #### `notifications.calendars`
 
 **Type:** list of strings
 **Default:** `[]` (all calendars)
 
-Restrict notifications to events in these calendars. Empty means all.
+Restrict the scheduler to events in these calendars. Empty means all.
 
-You can verify configuration end-to-end without waiting for a real event:
+#### `notifications.backends.system`
+
+The desktop-notification backend. Shells out to `notify-send` with the
+event title and a short body line.
+
+- `enabled` — boolean. Off by default.
+- `binary_path` — override the `notify-send` binary lookup.
+- `urgency` — `low` | `normal` | `critical`. Empty leaves `notify-send`'s
+  default.
+
+#### `notifications.backends.ntfy`
+
+The ntfy backend. POSTs to `<url>/<topic>` with the event title in the
+body and tags in the headers.
+
+- `enabled` — boolean. Off by default.
+- `url` — base URL (e.g. `https://ntfy.sh`).
+- `topic` — topic name. Keep it unguessable on public servers.
+
+#### `notifications.actions`
+
+Wires the script-runner side. Disabled by default — vault frontmatter
+cannot fire scripts unless you opt in.
+
+- `enabled` — boolean. Off by default.
+- `config_path` — override the actions file location. Empty falls back
+  to `~/.config/calemdar/actions.yaml` (XDG-aware).
+
+See [Actions](actions.md) for the actions.yaml format and the trust
+model.
+
+You can verify backend wiring end-to-end without waiting for a real
+event:
 
 ```sh
-calemdar notify test
+calemdar notify test          # fires a test through every enabled backend
+calemdar notify test ntfy     # restrict to one backend
+calemdar notify actions       # list registered actions
 ```
-
-This POSTs a single test push and exits. It does NOT gate on
-`enabled`, so you can confirm URL + topic before flipping the switch on
-the daemon.
 
 ## Full example
 
@@ -216,10 +263,18 @@ calendars:
   - special
 notifications:
   enabled: false
-  # ntfy_url: https://ntfy.sh
-  # ntfy_topic: my-private-calemdar-topic
-  # lead_minutes: [5, 60]
-  # calendars: []
+  tick_interval: 1m
+  max_lead: 23h
+  max_concurrent_spawns: 4
+  backends:
+    system:
+      enabled: false
+    ntfy:
+      enabled: false
+      # url: https://ntfy.sh
+      # topic: my-private-calemdar-topic
+  actions:
+    enabled: false
 ```
 
 See also [`examples/config.yaml`](https://github.com/arch-err/calemdar/blob/main/examples/config.yaml)

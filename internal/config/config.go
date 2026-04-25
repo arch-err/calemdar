@@ -40,16 +40,92 @@ type Config struct {
 	Notifications       Notifications `yaml:"notifications"`
 }
 
-// Notifications controls upcoming-event push notifications. When Enabled,
-// the serve daemon spawns a ticker goroutine that POSTs to a ntfy topic
-// whenever an upcoming event crosses one of the lead-time windows.
+// Notifications controls the per-event notification subsystem.
+//
+// Per-event rules live in event/root frontmatter as a `notify:` list.
+// This block governs the daemon-side knobs: which backends are
+// available, how often the scheduler ticks, the action runner setup.
 type Notifications struct {
-	Enabled     bool     `yaml:"enabled"`
-	NtfyURL     string   `yaml:"ntfy_url"`     // base, e.g. "https://ntfy.sh"
-	NtfyTopic   string   `yaml:"ntfy_topic"`   // topic name
-	LeadMinutes []int    `yaml:"lead_minutes"` // default [5, 60]
-	Calendars   []string `yaml:"calendars"`    // empty means all
+	Enabled bool `yaml:"enabled"`
+
+	// TickInterval is how often the scheduler wakes. "1m" is the
+	// default; values below 30s are clamped at validation time.
+	TickInterval Duration `yaml:"tick_interval,omitempty"`
+	// MaxLead caps the longest event-bound lead the scheduler will
+	// honour. "23h" by default — keeps the lookahead window tight.
+	MaxLead Duration `yaml:"max_lead,omitempty"`
+	// MaxConcurrentSpawns caps the action runner's parallelism so a
+	// flurry of fires can't fork-bomb the daemon.
+	MaxConcurrentSpawns int `yaml:"max_concurrent_spawns,omitempty"`
+	// Calendars filters which calendars the scheduler considers.
+	// Empty means all configured calendars.
+	Calendars []string `yaml:"calendars,omitempty"`
+
+	// Backends is the per-backend toggle + per-backend config. A
+	// backend is registered iff its Enabled flag is true.
+	Backends Backends `yaml:"backends"`
+
+	// Actions wires the script-runner side. Disabled by default per
+	// the threat model recommendation: vault frontmatter cannot trigger
+	// scripts unless the user explicitly opts in.
+	Actions ActionsConfig `yaml:"actions"`
 }
+
+// Backends groups one config block per registered backend. New backends
+// add a field here.
+type Backends struct {
+	System SystemBackend `yaml:"system"`
+	Ntfy   NtfyBackend   `yaml:"ntfy"`
+}
+
+// SystemBackend is the libnotify-via-notify-send backend.
+type SystemBackend struct {
+	Enabled    bool   `yaml:"enabled"`
+	BinaryPath string `yaml:"binary_path,omitempty"` // override notify-send binary
+	Urgency    string `yaml:"urgency,omitempty"`     // "low" | "normal" | "critical"
+}
+
+// NtfyBackend is the ntfy.sh / self-hosted-ntfy backend.
+type NtfyBackend struct {
+	Enabled bool   `yaml:"enabled"`
+	URL     string `yaml:"url"`   // base, e.g. "https://ntfy.sh"
+	Topic   string `yaml:"topic"` // topic name
+}
+
+// ActionsConfig wires the script-runner side. ConfigPath is honoured
+// when set; empty falls back to the XDG default
+// (~/.config/calemdar/actions.yaml).
+type ActionsConfig struct {
+	Enabled    bool   `yaml:"enabled"`
+	ConfigPath string `yaml:"config_path,omitempty"`
+}
+
+// Duration is a time.Duration alias with YAML scalar parsing
+// ("1m" / "30s" / "23h"). Stored as time.Duration so callers can use
+// it directly.
+type Duration time.Duration
+
+// UnmarshalYAML accepts a scalar parsed by time.ParseDuration.
+func (d *Duration) UnmarshalYAML(node *yaml.Node) error {
+	if node == nil || node.Value == "" {
+		return nil
+	}
+	v, err := time.ParseDuration(node.Value)
+	if err != nil {
+		return fmt.Errorf("duration %q: %w", node.Value, err)
+	}
+	*d = Duration(v)
+	return nil
+}
+
+// MarshalYAML renders the duration in canonical form so `config show`
+// prints a human-readable value.
+func (d Duration) MarshalYAML() (any, error) {
+	return time.Duration(d).String(), nil
+}
+
+// AsDuration is a small convenience for the common cast.
+func (d Duration) AsDuration() time.Duration { return time.Duration(d) }
 
 // Defaults returns a Config with v1's built-in defaults filled in.
 // Used to seed missing fields during Load.
@@ -62,8 +138,15 @@ func Defaults() Config {
 		DebounceMs:          500,
 		Calendars:           []string{"health", "tech", "work", "life", "friends-family", "special"},
 		Notifications: Notifications{
-			Enabled:     false,
-			LeadMinutes: []int{5, 60},
+			Enabled:             false,
+			TickInterval:        Duration(time.Minute),
+			MaxLead:             Duration(23 * time.Hour),
+			MaxConcurrentSpawns: 4,
+			Backends: Backends{
+				System: SystemBackend{Enabled: false},
+				Ntfy:   NtfyBackend{Enabled: false},
+			},
+			Actions: ActionsConfig{Enabled: false},
 		},
 	}
 }
@@ -126,21 +209,48 @@ func (c Config) Validate() error {
 	if len(c.Calendars) == 0 {
 		return fmt.Errorf("config: calendars list is empty")
 	}
-	if c.Notifications.Enabled {
-		if strings.TrimSpace(c.Notifications.NtfyURL) == "" {
-			return fmt.Errorf("config: notifications.ntfy_url required when notifications.enabled")
+	return c.Notifications.Validate()
+}
+
+// Validate enforces notification-specific invariants. Pulled out of
+// Config.Validate so other callers (config init, tests) can run it
+// directly.
+func (n Notifications) Validate() error {
+	if !n.Enabled {
+		// Loose check: ntfy topic, if set, must still match the regex
+		// — saves users from typo-ing it before flipping enabled on.
+		if n.Backends.Ntfy.Topic != "" && !ntfyTopicRE.MatchString(n.Backends.Ntfy.Topic) {
+			return fmt.Errorf("config: notifications.backends.ntfy.topic %q invalid (must match %s)",
+				n.Backends.Ntfy.Topic, ntfyTopicRE.String())
 		}
-		if strings.TrimSpace(c.Notifications.NtfyTopic) == "" {
-			return fmt.Errorf("config: notifications.ntfy_topic required when notifications.enabled")
+		return nil
+	}
+	tick := n.TickInterval.AsDuration()
+	if tick != 0 && tick < 30*time.Second {
+		return fmt.Errorf("config: notifications.tick_interval %s below minimum 30s", tick)
+	}
+	max := n.MaxLead.AsDuration()
+	if max != 0 && max > 24*time.Hour {
+		return fmt.Errorf("config: notifications.max_lead %s above 24h cap", max)
+	}
+	if n.Backends.Ntfy.Enabled {
+		if strings.TrimSpace(n.Backends.Ntfy.URL) == "" {
+			return fmt.Errorf("config: notifications.backends.ntfy.url required when ntfy backend enabled")
+		}
+		if strings.TrimSpace(n.Backends.Ntfy.Topic) == "" {
+			return fmt.Errorf("config: notifications.backends.ntfy.topic required when ntfy backend enabled")
 		}
 	}
-	if c.Notifications.NtfyTopic != "" && !ntfyTopicRE.MatchString(c.Notifications.NtfyTopic) {
-		return fmt.Errorf("config: notifications.ntfy_topic %q invalid (must match %s)",
-			c.Notifications.NtfyTopic, ntfyTopicRE.String())
+	if n.Backends.Ntfy.Topic != "" && !ntfyTopicRE.MatchString(n.Backends.Ntfy.Topic) {
+		return fmt.Errorf("config: notifications.backends.ntfy.topic %q invalid (must match %s)",
+			n.Backends.Ntfy.Topic, ntfyTopicRE.String())
 	}
-	for _, m := range c.Notifications.LeadMinutes {
-		if m <= 0 {
-			return fmt.Errorf("config: notifications.lead_minutes values must be positive (got %d)", m)
+	if n.Backends.System.Urgency != "" {
+		switch n.Backends.System.Urgency {
+		case "low", "normal", "critical":
+		default:
+			return fmt.Errorf("config: notifications.backends.system.urgency %q must be low|normal|critical",
+				n.Backends.System.Urgency)
 		}
 	}
 	return nil
@@ -202,25 +312,56 @@ func merge(base, file Config) Config {
 	return base
 }
 
-// mergeNotifications overlays non-zero fields of file onto base. Enabled is a
-// bool so any file value wins (defaults to false, explicit true enables).
+// mergeNotifications overlays non-zero fields of file onto base.
 func mergeNotifications(base, file Notifications) Notifications {
-	// Enabled: file always wins since zero value (false) is also the default.
-	// A user setting enabled: false is equivalent to leaving it out.
 	if file.Enabled {
 		base.Enabled = true
 	}
-	if file.NtfyURL != "" {
-		base.NtfyURL = file.NtfyURL
+	if file.TickInterval != 0 {
+		base.TickInterval = file.TickInterval
 	}
-	if file.NtfyTopic != "" {
-		base.NtfyTopic = file.NtfyTopic
+	if file.MaxLead != 0 {
+		base.MaxLead = file.MaxLead
 	}
-	if len(file.LeadMinutes) > 0 {
-		base.LeadMinutes = file.LeadMinutes
+	if file.MaxConcurrentSpawns != 0 {
+		base.MaxConcurrentSpawns = file.MaxConcurrentSpawns
 	}
 	if len(file.Calendars) > 0 {
 		base.Calendars = file.Calendars
+	}
+	base.Backends = mergeBackends(base.Backends, file.Backends)
+	base.Actions = mergeActions(base.Actions, file.Actions)
+	return base
+}
+
+func mergeBackends(base, file Backends) Backends {
+	if file.System.Enabled {
+		base.System.Enabled = true
+	}
+	if file.System.BinaryPath != "" {
+		base.System.BinaryPath = file.System.BinaryPath
+	}
+	if file.System.Urgency != "" {
+		base.System.Urgency = file.System.Urgency
+	}
+	if file.Ntfy.Enabled {
+		base.Ntfy.Enabled = true
+	}
+	if file.Ntfy.URL != "" {
+		base.Ntfy.URL = file.Ntfy.URL
+	}
+	if file.Ntfy.Topic != "" {
+		base.Ntfy.Topic = file.Ntfy.Topic
+	}
+	return base
+}
+
+func mergeActions(base, file ActionsConfig) ActionsConfig {
+	if file.Enabled {
+		base.Enabled = true
+	}
+	if file.ConfigPath != "" {
+		base.ConfigPath = file.ConfigPath
 	}
 	return base
 }

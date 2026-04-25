@@ -15,6 +15,11 @@ type Event struct {
 	SeriesExpandedAt string `yaml:"series-expanded-at,omitempty"`
 	UserOwned        bool   `yaml:"user-owned"`
 
+	// Notify is the per-event notification rules. On expansion, copied
+	// from the root. If the user overrides it on an expanded file, the
+	// user-owned flip preserves the override across reconciles.
+	Notify []NotifyEntry `yaml:"notify,omitempty"`
+
 	// Body is the markdown body after the frontmatter. On expansion, this
 	// is the root's body preceded by a wikilink paragraph to the root.
 	Body string `yaml:"-"`

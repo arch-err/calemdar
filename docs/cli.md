@@ -169,22 +169,36 @@ calemdar event show events/health/2026-05-03-workout.md
 
 ## Notifications
 
-Configured via the `notifications:` block in
-[`config.yaml`](configuration.md#notifications). When enabled, the
-`serve` daemon pushes upcoming events to an ntfy topic; these
-subcommands help set up and verify that path.
+Per-event rules live in event/root frontmatter (`notify:` — see
+[Schema](schema.md)). The daemon dispatches them through the backends
+enabled in [`notifications.backends`](configuration.md#notifications)
+and may also spawn local scripts via [actions](actions.md). These
+subcommands help set up and verify the wiring.
 
-### `calemdar notify test`
+### `calemdar notify test [backend]`
 
-Send a single test push to the configured ntfy topic. Does NOT gate on
-`notifications.enabled` — the point is to prove the URL + topic work
-before flipping the daemon switch on.
+Fire a test message through every enabled backend, or one named.
+Bypasses the schedule layer entirely — the point is to prove backend
+wiring before any rule actually fires.
 
 ```sh
-calemdar notify test
+calemdar notify test           # every enabled backend
+calemdar notify test ntfy      # restrict to ntfy
+calemdar notify test system    # restrict to system (notify-send)
 ```
 
-Errors if `ntfy_url` or `ntfy_topic` are missing.
+Errors if no matching backend is enabled or configured.
+
+### `calemdar notify actions`
+
+List action entries registered in
+`~/.config/calemdar/actions.yaml` (or the path set in
+`notifications.actions.config_path`). Useful for confirming a name is
+known before referencing it in a `notify:` rule.
+
+```sh
+calemdar notify actions
+```
 
 ## Config
 

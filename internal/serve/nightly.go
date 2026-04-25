@@ -2,8 +2,10 @@ package serve
 
 import (
 	"log"
+	"time"
 
 	"github.com/arch-err/calemdar/internal/archive"
+	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/reconcile"
 	"github.com/arch-err/calemdar/internal/series"
 )
@@ -37,5 +39,18 @@ func runNightly(opts Options) {
 		log.Printf("serve: nightly archive: %v", err)
 	} else {
 		log.Printf("serve: nightly archived %d events", arep.Moved)
+	}
+
+	// Prune the notify_fired dedupe table. Only meaningful when notifs
+	// are enabled; running it unconditionally is harmless when the
+	// table is empty.
+	if config.Active.Notifications.Enabled {
+		cutoff := time.Now().Add(-14 * 24 * time.Hour)
+		n, err := opts.Store.PruneFired(cutoff)
+		if err != nil {
+			log.Printf("serve: nightly prune notify_fired: %v", err)
+		} else if n > 0 {
+			log.Printf("serve: nightly pruned %d notify_fired rows", n)
+		}
 	}
 }

@@ -77,30 +77,41 @@ func TestUpsertOccurrenceAndList(t *testing.T) {
 	}
 }
 
-func TestListUpcomingFiltersByTimeAndCalendar(t *testing.T) {
+func TestListUpcomingWithNotifyFiltersByTimeAndCalendar(t *testing.T) {
 	s := openTemp(t)
 	loc := model.Location()
 
-	// Two events at 10:00 on 2026-05-04, different calendars.
+	notify := []model.NotifyEntry{{Lead: "5m", Via: []string{"system"}}}
+
+	// Two events at 10:00 on 2026-05-04, different calendars, both with notify.
 	e1 := &model.Event{
 		Path: "/vault/events/health/2026-05-04-workout.md",
 		Date: "2026-05-04", Title: "Workout", StartTime: "10:00", EndTime: "11:00",
+		Notify: notify,
 	}
 	e2 := &model.Event{
 		Path: "/vault/events/work/2026-05-04-standup.md",
 		Date: "2026-05-04", Title: "Standup", StartTime: "10:00", EndTime: "10:15",
+		Notify: notify,
 	}
 	// All-day event — should always be skipped.
 	e3 := &model.Event{
 		Path: "/vault/events/life/2026-05-04-birthday.md",
 		Date: "2026-05-04", Title: "Birthday", AllDay: true,
+		Notify: notify,
 	}
 	// Out-of-window event.
 	e4 := &model.Event{
 		Path: "/vault/events/health/2026-05-04-evening.md",
 		Date: "2026-05-04", Title: "Evening", StartTime: "20:00", EndTime: "21:00",
+		Notify: notify,
 	}
-	for _, e := range []*model.Event{e1, e2, e3, e4} {
+	// Event without notify — should never be returned.
+	e5 := &model.Event{
+		Path: "/vault/events/health/2026-05-04-coffee.md",
+		Date: "2026-05-04", Title: "Coffee", StartTime: "10:00", EndTime: "10:15",
+	}
+	for _, e := range []*model.Event{e1, e2, e3, e4, e5} {
 		cal := "health"
 		switch {
 		case e.Path == e2.Path:
@@ -113,39 +124,84 @@ func TestListUpcomingFiltersByTimeAndCalendar(t *testing.T) {
 		}
 	}
 
-	// Window: 09:55–10:05 on 2026-05-04 → should match both 10:00 events.
+	// Window: 09:55–10:05 on 2026-05-04 → should match both 10:00 notify events.
 	from := time.Date(2026, 5, 4, 9, 55, 0, 0, loc)
 	to := time.Date(2026, 5, 4, 10, 5, 0, 0, loc)
 
-	got, err := s.ListUpcoming(from, to, nil)
+	got, err := s.ListUpcomingWithNotify(from, to, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 2 {
-		t.Fatalf("got %d, want 2 (10:00 events only): %+v", len(got), got)
+		t.Fatalf("got %d, want 2 (10:00 events with notify only)", len(got))
 	}
 
 	// Restrict to calendar = work → only standup.
-	gotWork, err := s.ListUpcoming(from, to, []string{"work"})
+	gotWork, err := s.ListUpcomingWithNotify(from, to, []string{"work"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(gotWork) != 1 {
 		t.Fatalf("got %d, want 1 work event", len(gotWork))
 	}
-	if gotWork[0].Title != "Standup" {
-		t.Errorf("title = %q", gotWork[0].Title)
+	if gotWork[0].Event.Title != "Standup" {
+		t.Errorf("title = %q", gotWork[0].Event.Title)
 	}
 
 	// Evening event with window far away → empty.
 	earlyFrom := time.Date(2026, 5, 4, 8, 0, 0, 0, loc)
 	earlyTo := time.Date(2026, 5, 4, 8, 5, 0, 0, loc)
-	early, err := s.ListUpcoming(earlyFrom, earlyTo, nil)
+	early, err := s.ListUpcomingWithNotify(earlyFrom, earlyTo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(early) != 0 {
 		t.Errorf("expected 0 for early window, got %d", len(early))
+	}
+}
+
+func TestNotifyFiredRoundtrip(t *testing.T) {
+	s := openTemp(t)
+	when := time.Date(2026, 5, 4, 9, 55, 0, 0, time.UTC)
+	if err := s.RecordFired("/p.md", 0, when, when); err != nil {
+		t.Fatal(err)
+	}
+	got, err := s.IsFired("/p.md", 0, when)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got {
+		t.Error("expected IsFired = true after RecordFired")
+	}
+	// Different lead index → still false.
+	got2, _ := s.IsFired("/p.md", 1, when)
+	if got2 {
+		t.Error("expected false for different notify_index")
+	}
+	// Idempotency: second insert at same key is a no-op.
+	if err := s.RecordFired("/p.md", 0, when, when); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestPruneFired(t *testing.T) {
+	s := openTemp(t)
+	old := time.Date(2026, 5, 1, 0, 0, 0, 0, time.UTC)
+	keep := time.Date(2026, 5, 5, 0, 0, 0, 0, time.UTC)
+	_ = s.RecordFired("/a.md", 0, old, old)
+	_ = s.RecordFired("/b.md", 0, keep, keep)
+
+	cutoff := time.Date(2026, 5, 3, 0, 0, 0, 0, time.UTC)
+	n, err := s.PruneFired(cutoff)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("pruned = %d, want 1", n)
+	}
+	gotKeep, _ := s.IsFired("/b.md", 0, keep)
+	if !gotKeep {
+		t.Error("kept row missing")
 	}
 }
 

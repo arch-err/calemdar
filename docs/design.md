@@ -173,57 +173,85 @@ calemdar notify test               # one-shot ntfy test push
 - Hosting: laptop for v1. Architecture is server-ready — moving to the
   home server is a packaging exercise, not a redesign.
 
-## Notifications (v1: minimal, in-daemon)
+## Notifications
 
-What shipped in v1 is intentionally small: a single ntfy backend, wired into
-`calemdar serve` as a goroutine, with a "test ping" CLI for preflighting the
-URL/topic. No multi-backend, no per-event opt-in, no action scripts — those
-land in the next iteration (see "Next" below).
+The notification subsystem has three pieces: per-event `notify:` rules
+declared in vault frontmatter, a small set of pluggable **backends**
+that deliver the message, and an **action runner** that may also spawn
+a local script when a rule fires.
 
-- **In-daemon, not a separate binary.** Earlier sketches proposed a
-  `calemdar-notify` binary on a `systemd --user` timer; the real shape is
-  simpler: when `notifications.enabled` is true, `internal/serve` spawns
-  `internal/notify.Notifier` as a goroutine on startup. One process, one
-  ticker.
-- **Backend: ntfy only.** A 60-second ticker (`tickInterval`) queries the
-  store via `ListUpcoming` for non-all-day occurrences whose start time
-  falls inside `now + lead ± 30s` for each configured `lead_minutes` value
-  (default `[5, 60]`). Matches POST to `<ntfy_url>/<ntfy_topic>` with a
-  short body (`title — in Nm @ HH:MM–HH:MM`) and `Tags: calendar,<cal>`.
-- **Single topic.** One URL, one topic, optional per-calendar allow-list
-  via `notifications.calendars` (empty = all).
-- **Dedupe.** In-memory map keyed by `<path>|<lead>`; GC'd daily so the
-  same event-lead pair never fires twice. Lost on daemon restart — a
-  daemon restart inside a lead window can re-fire, by design (cheap and
-  acceptable for v1).
-- **All-day skipped.** No natural trigger time, no notification.
-- **Preflight CLI:** `calemdar notify test` POSTs a single canned message
-  regardless of `notifications.enabled` so the user can confirm wiring
-  before flipping the daemon switch on. Errors if URL/topic unset.
-- **Config validation:** when `enabled: true`, `ntfy_url` and `ntfy_topic`
-  are required; topic must match `^[A-Za-z0-9_-]{1,64}$`; lead-minutes
-  must be positive. Enforced in `config.Validate`.
+### Frontmatter rules
 
-### Next: rich notification system (designed, not yet built)
+Every event and recurring root may carry a `notify:` list. Each entry
+is `{lead, via, action}` — `lead` is a duration string (`5m`, `1h`,
+`0`), `via` is the list of backends to dispatch to, `action` references
+a named entry in `~/.config/calemdar/actions.yaml`. At least one of
+`via` or `action` must be set per entry. Up to 16 entries per event;
+min lead 1m, max lead 23h.
 
-Planned for the iteration after v1, not in current code:
+Rules attached to a root inherit into every expanded occurrence (copied
+verbatim into the expansion). An expanded occurrence may override by
+writing its own `notify:` (which flips `user-owned: true`). An empty
+list (`notify: []`) on an occurrence opts that single occurrence out.
+Edits to the root propagate to non-user-owned occurrences via the
+existing reconcile path.
 
-- **Multi-backend.** Add a system-notifications backend (libnotify /
-  desktop notifications) alongside ntfy, selectable per route.
-- **Per-event opt-in / opt-out.** Frontmatter flag on events (and roots,
-  inheritable) to override the global notify policy. Today, every
-  non-all-day event in a watched calendar fires.
-- **Pre-notifications / lead-time per route.** Today every backend fires
-  on the same `lead_minutes` list. The next iteration lets each route
-  define its own lead-time policy (e.g. ntfy at `[5, 60]`, desktop at
-  `[15]`).
-- **Action runner.** Run a user-defined script on notification fire (or
-  on event start), with the event's frontmatter passed as env. Use case:
-  pre-meeting "open the agenda doc" or "join the call" automation.
-- **Reload / reconfigure without daemon restart.** Today the notifier
-  copies its config at start-up; rich version exposes a SIGHUP path.
+### Backends
 
-These are intentionally not in v1. Don't read the code expecting them.
+Backends register through `internal/notify.Register` at daemon start
+based on the resolved config:
+
+- `system` — libnotify-via-`notify-send`. Title + body + tags.
+- `ntfy` — POSTs to `<url>/<topic>` with title in headers.
+
+A backend is registered iff its `enabled` flag is true. Adding a new
+backend (Discord webhook, Slack, etc.) is a Go file plus a couple of
+config struct fields — no scheduler changes.
+
+### Scheduler
+
+`internal/notify.Scheduler` runs as a goroutine inside `calemdar serve`.
+
+- **Tick:** `tick_interval` (default `1m`).
+- **Lookahead:** queries the SQLite cache (`occurrences` table, filtered
+  by `notify_json IS NOT NULL`) for events with start in
+  `[now, now + max_lead]`. `max_lead` defaults to 23h, so the lookahead
+  is effectively today's events.
+- **Fire:** for each rule, `fire_at = event.start - lead`. The scheduler
+  fires rules whose `fire_at` lands in `(last_tick, now]`.
+- **Dispatch:** for each backend in `via`, call `Backend.Send(ctx, n)`.
+  If `action` is set and the actions runner is enabled, spawn the named
+  action with curated env (no parent-process env inheritance — keeps
+  daemon secrets out of action subprocesses).
+- **Dedupe:** persistent table `notify_fired(event_path, notify_index,
+  fire_at_planned)`. `IsFired` consulted on every candidate; `RecordFired`
+  inserts before dispatch (a crash mid-fire suppresses replay rather
+  than risking a double-fire).
+- **Restart safety:** on startup, `last_tick` is initialised to
+  `now - 2 * tick_interval` so the daemon picks up rules whose fire time
+  fell in the last couple of minutes but does NOT replay older history
+  (which would spam the user when a closed laptop wakes up).
+- **Pruning:** the nightly loop deletes `notify_fired` rows older than
+  14 days.
+
+### Actions
+
+Actions live in `~/.config/calemdar/actions.yaml` — local, NOT synced.
+This split is deliberate: vault frontmatter cannot contain script paths,
+only action *names*. The laptop-local actions file resolves names to
+commands. See [Actions](actions.md) for the file format and full trust
+rationale.
+
+The runner spawns via `exec.CommandContext` with a curated env (only
+`PATH`, `HOME`, `USER`, `CALEMDAR_*`). A semaphore caps concurrency
+(`max_concurrent_spawns`, default 4). A per-action timeout (default 30s)
+kills runaway scripts.
+
+### Preflight CLI
+
+- `calemdar notify test [backend]` — fire a test through every enabled
+  backend, or just one named.
+- `calemdar notify actions` — list registered actions.
 
 ## ICS export (deferred, maybe-never)
 

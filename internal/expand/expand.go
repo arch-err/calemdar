@@ -96,8 +96,17 @@ func Expand(r *model.Root, start, end, expandedAt time.Time) ([]*model.Event, er
 
 // buildEvent constructs a single expanded Event for root r at date d.
 // Path is left empty — the writer populates it based on vault location.
+//
+// Notify is copied from the root verbatim so every expanded occurrence
+// inherits the root's notification rules. The expansion side never sets
+// user-owned, so the orphan-sweep + reconcile behaviour propagates root
+// notify edits to existing non-user-owned occurrences automatically.
 func buildEvent(r *model.Root, d, expandedAt time.Time) *model.Event {
 	body := "[[" + r.Slug + "]]\n\n" + strings.TrimLeft(r.Body, "\n")
+	var notif []model.NotifyEntry
+	if len(r.Notify) > 0 {
+		notif = append(notif, r.Notify...)
+	}
 	return &model.Event{
 		Title:            r.Title,
 		Date:             model.FormatDate(d),
@@ -108,6 +117,7 @@ func buildEvent(r *model.Root, d, expandedAt time.Time) *model.Event {
 		SeriesID:         r.ID,
 		SeriesExpandedAt: expandedAt.UTC().Format(time.RFC3339),
 		UserOwned:        false,
+		Notify:           notif,
 		Body:             body,
 	}
 }

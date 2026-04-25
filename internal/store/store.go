@@ -76,16 +76,41 @@ CREATE TABLE IF NOT EXISTS occurrences (
   end_time      TEXT,
   all_day       INTEGER NOT NULL,
   user_owned    INTEGER NOT NULL,
-  expanded_at   TEXT
+  expanded_at   TEXT,
+  notify_json   TEXT
   -- series_id is a soft reference: store is a projection, reindex keeps it coherent.
 );
 
 CREATE INDEX IF NOT EXISTS occurrences_date     ON occurrences(date);
 CREATE INDEX IF NOT EXISTS occurrences_series   ON occurrences(series_id);
 CREATE INDEX IF NOT EXISTS occurrences_calendar ON occurrences(calendar);
+
+-- notify_fired holds a row per (event_path, notify_index, planned fire_at)
+-- so daemon restarts don't replay history. fired_at carries the
+-- wall-clock time at which delivery happened.
+CREATE TABLE IF NOT EXISTS notify_fired (
+  event_path      TEXT NOT NULL,
+  notify_index    INTEGER NOT NULL,
+  fire_at_planned TEXT NOT NULL,
+  fired_at        TEXT NOT NULL,
+  PRIMARY KEY (event_path, notify_index, fire_at_planned)
+);
+
+CREATE INDEX IF NOT EXISTS notify_fired_path ON notify_fired(event_path);
 `
 	_, err := s.db.Exec(ddl)
-	return err
+	if err != nil {
+		return err
+	}
+	// Best-effort migration for existing DBs that pre-date notify_json.
+	// SQLite ignores ALTER TABLE ADD COLUMN errors when the column already
+	// exists if we wrap and discard "duplicate column" specifically.
+	if _, err := s.db.Exec(`ALTER TABLE occurrences ADD COLUMN notify_json TEXT`); err != nil {
+		if !strings.Contains(err.Error(), "duplicate column name") {
+			return err
+		}
+	}
+	return nil
 }
 
 // ---------- series ----------
@@ -182,10 +207,18 @@ func (s *Store) ListSeries() ([]*model.Root, error) {
 // UpsertOccurrence writes or replaces an occurrence row matching e.Path.
 // calendar is the top-level events/<calendar>/ folder.
 func (s *Store) UpsertOccurrence(e *model.Event, calendar string) error {
+	var notifyJSON any
+	if len(e.Notify) > 0 {
+		raw, err := json.Marshal(e.Notify)
+		if err != nil {
+			return fmt.Errorf("store: marshal notify: %w", err)
+		}
+		notifyJSON = string(raw)
+	}
 	_, err := s.db.Exec(`
 		INSERT INTO occurrences (path, series_id, calendar, date, title,
-			start_time, end_time, all_day, user_owned, expanded_at)
-		VALUES (?,?,?,?,?,?,?,?,?,?)
+			start_time, end_time, all_day, user_owned, expanded_at, notify_json)
+		VALUES (?,?,?,?,?,?,?,?,?,?,?)
 		ON CONFLICT(path) DO UPDATE SET
 			series_id=excluded.series_id,
 			calendar=excluded.calendar,
@@ -195,11 +228,13 @@ func (s *Store) UpsertOccurrence(e *model.Event, calendar string) error {
 			end_time=excluded.end_time,
 			all_day=excluded.all_day,
 			user_owned=excluded.user_owned,
-			expanded_at=excluded.expanded_at
+			expanded_at=excluded.expanded_at,
+			notify_json=excluded.notify_json
 	`,
 		e.Path, nullIfEmpty(e.SeriesID), calendar, e.Date, e.Title,
 		nullIfEmpty(e.StartTime), nullIfEmpty(e.EndTime),
 		boolToInt(e.AllDay), boolToInt(e.UserOwned), nullIfEmpty(e.SeriesExpandedAt),
+		notifyJSON,
 	)
 	return err
 }
@@ -242,26 +277,34 @@ func (s *Store) ListOccurrencesInRange(from, to string) ([]*model.Event, error) 
 	return out, rows.Err()
 }
 
-// ListUpcoming returns non-all-day occurrences whose "date T start_time"
-// falls within [from, to]. calendars filters to the given set; empty means
-// all. Timestamps are parsed in model.Location() (the configured timezone).
+// UpcomingRow is a scheduler-friendly row: the event payload plus the
+// calendar (which Event itself doesn't carry) for tag/log purposes.
+type UpcomingRow struct {
+	Event    *model.Event
+	Calendar string
+}
+
+// ListUpcomingWithNotify returns non-all-day occurrences whose
+// "date T start_time" falls within [from, to] AND that have at least
+// one notify rule. calendars filters to the given set; empty means all.
+// Timestamps are parsed in model.Location() (the configured timezone).
 //
-// Limitation (by design): all-day events are skipped — there's no obvious
-// trigger-time for them, and the notify layer cares about "about to start"
-// windows. If all-day notifications are wanted later, they belong to a
-// separate query with its own lead-time semantics.
-func (s *Store) ListUpcoming(from, to time.Time, calendars []string) ([]*model.Event, error) {
-	// Coarse pre-filter on date, then fine-filter in-Go by parsing start_time.
-	// SQLite's lexicographic comparison on YYYY-MM-DD is correct; we widen by
-	// a day on each side to cover events whose local time straddles midnight
-	// when `from` / `to` themselves straddle midnight.
+// Limitation (by design): all-day events are skipped — there's no
+// obvious trigger-time for them, and the scheduler cares about
+// "about to start" windows.
+func (s *Store) ListUpcomingWithNotify(from, to time.Time, calendars []string) ([]UpcomingRow, error) {
+	// Coarse pre-filter on date, then fine-filter in-Go by parsing
+	// start_time. SQLite's lexicographic comparison on YYYY-MM-DD is
+	// correct; we widen by a day on each side to cover events whose
+	// local time straddles midnight when from/to do.
 	fromDate := from.AddDate(0, 0, -1).Format("2006-01-02")
 	toDate := to.AddDate(0, 0, 1).Format("2006-01-02")
 
 	query := `SELECT path, series_id, calendar, date, title,
-		start_time, end_time, all_day, user_owned, expanded_at
+		start_time, end_time, all_day, user_owned, expanded_at, notify_json
 		FROM occurrences
-		WHERE date >= ? AND date <= ? AND all_day = 0`
+		WHERE date >= ? AND date <= ? AND all_day = 0
+		AND notify_json IS NOT NULL AND notify_json != ''`
 	args := []any{fromDate, toDate}
 
 	if len(calendars) > 0 {
@@ -281,14 +324,14 @@ func (s *Store) ListUpcoming(from, to time.Time, calendars []string) ([]*model.E
 	defer rows.Close()
 
 	loc := model.Location()
-	var out []*model.Event
+	var out []UpcomingRow
 	for rows.Next() {
 		var e model.Event
-		var seriesID, startTime, endTime, expandedAt sql.NullString
+		var seriesID, startTime, endTime, expandedAt, notifyJSON sql.NullString
 		var calendar string
 		var allDay, userOwned int
 		if err := rows.Scan(&e.Path, &seriesID, &calendar, &e.Date, &e.Title,
-			&startTime, &endTime, &allDay, &userOwned, &expandedAt); err != nil {
+			&startTime, &endTime, &allDay, &userOwned, &expandedAt, &notifyJSON); err != nil {
 			return nil, err
 		}
 		e.SeriesID = seriesID.String
@@ -299,21 +342,67 @@ func (s *Store) ListUpcoming(from, to time.Time, calendars []string) ([]*model.E
 		e.SeriesExpandedAt = expandedAt.String
 		e.Type = "single"
 
-		// Skip rows with no start_time — nothing to trigger on.
+		if notifyJSON.String != "" {
+			if err := json.Unmarshal([]byte(notifyJSON.String), &e.Notify); err != nil {
+				continue // skip malformed rows
+			}
+		}
+		if len(e.Notify) == 0 {
+			continue
+		}
 		if e.StartTime == "" {
 			continue
 		}
 		ts, err := time.ParseInLocation("2006-01-02 15:04", e.Date+" "+e.StartTime, loc)
 		if err != nil {
-			// Malformed row — skip silently. Reindex will flag it elsewhere.
 			continue
 		}
 		if ts.Before(from) || ts.After(to) {
 			continue
 		}
-		out = append(out, &e)
+		out = append(out, UpcomingRow{Event: &e, Calendar: calendar})
 	}
 	return out, rows.Err()
+}
+
+// IsFired reports whether (eventPath, notifyIdx, fireAt) is already
+// recorded in notify_fired. fireAt is canonicalised to RFC3339 (UTC) so
+// callers don't have to worry about formatting.
+func (s *Store) IsFired(eventPath string, notifyIdx int, fireAt time.Time) (bool, error) {
+	key := fireAt.UTC().Format(time.RFC3339)
+	var n int
+	err := s.db.QueryRow(
+		`SELECT COUNT(*) FROM notify_fired WHERE event_path = ? AND notify_index = ? AND fire_at_planned = ?`,
+		eventPath, notifyIdx, key,
+	).Scan(&n)
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// RecordFired inserts a row into notify_fired. Idempotent — duplicate
+// inserts are ignored.
+func (s *Store) RecordFired(eventPath string, notifyIdx int, fireAt, firedAt time.Time) error {
+	planned := fireAt.UTC().Format(time.RFC3339)
+	actual := firedAt.UTC().Format(time.RFC3339)
+	_, err := s.db.Exec(
+		`INSERT OR IGNORE INTO notify_fired (event_path, notify_index, fire_at_planned, fired_at)
+		 VALUES (?,?,?,?)`,
+		eventPath, notifyIdx, planned, actual,
+	)
+	return err
+}
+
+// PruneFired deletes notify_fired rows older than cutoff. Called by the
+// nightly loop to keep the table from growing unbounded.
+func (s *Store) PruneFired(cutoff time.Time) (int64, error) {
+	c := cutoff.UTC().Format(time.RFC3339)
+	res, err := s.db.Exec(`DELETE FROM notify_fired WHERE fire_at_planned < ?`, c)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 // Wipe truncates both tables. Used by reindex.

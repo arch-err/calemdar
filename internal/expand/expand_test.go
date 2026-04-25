@@ -205,6 +205,59 @@ func TestExpandUnknownCalendar(t *testing.T) {
 	}
 }
 
+// Notify rules on the root must propagate to every expanded occurrence.
+// Mutating one occurrence's slice must NOT bleed back into the root —
+// proving the copy is a value copy, not a slice alias.
+func TestExpandPropagatesNotifyToEachOccurrence(t *testing.T) {
+	rule := model.NotifyEntry{Lead: "5m", Via: []string{"system"}, Action: "pre-meeting"}
+	r := &model.Root{
+		ID: "id", Calendar: "work", Title: "Standup",
+		StartDate: "2026-05-01", Freq: model.FreqDaily, Interval: 1,
+		Notify: []model.NotifyEntry{rule},
+	}
+	got, err := Expand(r, mkDate("2026-05-01"), mkDate("2026-05-03"), fixedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 3 {
+		t.Fatalf("got %d events, want 3", len(got))
+	}
+	for i, e := range got {
+		if len(e.Notify) != 1 ||
+			e.Notify[0].Lead != rule.Lead ||
+			e.Notify[0].Action != rule.Action ||
+			len(e.Notify[0].Via) != 1 || e.Notify[0].Via[0] != "system" {
+			t.Errorf("event[%d].Notify = %v, want %v", i, e.Notify, rule)
+		}
+	}
+	// Mutate the first occurrence's notify slice and confirm root + sibling
+	// occurrences are untouched.
+	got[0].Notify[0].Action = "different"
+	if r.Notify[0].Action != "pre-meeting" {
+		t.Errorf("root mutated: %q", r.Notify[0].Action)
+	}
+	if got[1].Notify[0].Action != "pre-meeting" {
+		t.Errorf("sibling occurrence mutated: %q", got[1].Notify[0].Action)
+	}
+}
+
+func TestExpandLeavesNotifyEmptyWhenRootHasNone(t *testing.T) {
+	r := &model.Root{
+		ID: "id", Calendar: "work", Title: "x",
+		StartDate: "2026-05-01", Freq: model.FreqDaily, Interval: 1,
+	}
+	got, err := Expand(r, mkDate("2026-05-01"), mkDate("2026-05-01"), fixedAt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) != 1 {
+		t.Fatalf("got %d events", len(got))
+	}
+	if len(got[0].Notify) != 0 {
+		t.Errorf("Notify should be empty: %v", got[0].Notify)
+	}
+}
+
 func equal(a, b []string) bool {
 	if len(a) != len(b) {
 		return false

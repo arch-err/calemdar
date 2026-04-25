@@ -27,11 +27,27 @@ bymonthday: [1, 15]                         # monthly only. optional. days of mo
 exceptions:                                 # occurrence dates to skip
   - 2026-05-08
   - 2026-06-24
+notify:                                     # optional. inherited by every expansion
+  - lead: 5m                                # required. "0", "5m", "1h", "23h" — bare integer = minutes
+    via: [system, ntfy]                     # optional. backends to dispatch via
+    action: pre-meeting                     # optional. action name in actions.yaml (laptop-local)
 ---
 
 Notes body is free-form markdown. Copied verbatim into each expanded event
 at expansion time.
 ```
+
+### `notify:` rules
+
+Each entry runs at `event.start - lead`. At least one of `via` or
+`action` must be set. Maximum 16 rules per event/root. Min lead 1m, max
+lead 23h. See [Configuration / notifications](configuration.md) and
+[Actions](actions.md) for the daemon-side wiring.
+
+Rules attached to a root inherit into every expanded occurrence. An
+expanded occurrence may override by writing its own `notify:` (which
+also flips `user-owned: true`). An empty list (`notify: []`) on an
+occurrence opts that single occurrence out of all notifications.
 
 ### v1 recurrence coverage
 
@@ -63,6 +79,9 @@ type: single                                 # FC native field. always "single" 
 series-id: 019073c4-d7e0-7d8f-a1f3-8b2c9e5f4a10   # empty/absent = true one-off
 series-expanded-at: 2026-04-24T11:00:00Z    # when server wrote this file (RFC 3339 UTC)
 user-owned: false                            # true = server will not regenerate this
+notify:                                      # optional. copied from root at expansion time
+  - lead: 5m
+    via: [system]
 ---
 
 [[workout]]    # body-level backlink to root. human convenience, server ignores.

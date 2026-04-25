@@ -8,6 +8,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/arch-err/calemdar/internal/actions"
 	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/notify"
@@ -55,11 +56,12 @@ func Run(ctx context.Context, opts Options) error {
 	// Nightly timer: extend horizon + archive.
 	go runNightlyLoop(ctx, opts)
 
-	// Optional ntfy push notifications for upcoming events.
+	// Per-event notifications: register configured backends, build the
+	// actions runner (if enabled), spawn the scheduler.
 	if config.Active.Notifications.Enabled {
-		n := notify.New(opts.Store, config.Active.Notifications)
-		go n.Run(ctx)
-		log.Printf("serve: notifier started — topic %s", config.Active.Notifications.NtfyTopic)
+		if err := startScheduler(ctx, opts); err != nil {
+			log.Printf("serve: notif scheduler not started: %v", err)
+		}
 	}
 
 	log.Printf("serve: watching %s", opts.Vault.Root)
@@ -119,4 +121,65 @@ func parseHHMM(s string) (int, int, error) {
 		return 0, 0, fmt.Errorf("not HH:MM: %w", err)
 	}
 	return t.Hour(), t.Minute(), nil
+}
+
+// startScheduler wires backends + actions runner + scheduler. Each side
+// is independently optional: if the ntfy backend is disabled, we just
+// don't register it. Returns nil if at least one backend is registered;
+// otherwise returns an error so the daemon log surfaces a misconfig.
+func startScheduler(ctx context.Context, opts Options) error {
+	cfg := config.Active.Notifications
+
+	// Always start fresh — the daemon only registers what's configured.
+	notify.Reset()
+
+	registered := 0
+	if cfg.Backends.System.Enabled {
+		notify.Register(notify.NewSystem(notify.SystemConfig{
+			BinaryPath: cfg.Backends.System.BinaryPath,
+			Urgency:    cfg.Backends.System.Urgency,
+		}))
+		log.Printf("serve: notify backend registered — system")
+		registered++
+	}
+	if cfg.Backends.Ntfy.Enabled {
+		notify.Register(notify.NewNtfy(notify.NtfyConfig{
+			URL:   cfg.Backends.Ntfy.URL,
+			Topic: cfg.Backends.Ntfy.Topic,
+		}))
+		log.Printf("serve: notify backend registered — ntfy → %s/%s",
+			notify.RedactURL(cfg.Backends.Ntfy.URL), cfg.Backends.Ntfy.Topic)
+		registered++
+	}
+	if registered == 0 {
+		return fmt.Errorf("no backends enabled — set notifications.backends.system.enabled or .ntfy.enabled")
+	}
+
+	var runner *actions.Runner
+	if cfg.Actions.Enabled {
+		path := cfg.Actions.ConfigPath
+		if path == "" {
+			p, err := actions.Path()
+			if err != nil {
+				return fmt.Errorf("resolve actions path: %w", err)
+			}
+			path = p
+		}
+		acfg, err := actions.Load(path)
+		if err != nil {
+			return fmt.Errorf("load actions: %w", err)
+		}
+		runner = actions.NewRunner(acfg, cfg.MaxConcurrentSpawns)
+		log.Printf("serve: actions runner loaded — %d action(s) from %s", len(runner.Names()), path)
+	}
+
+	sc := notify.NewScheduler(opts.Store, runner, notify.SchedulerConfig{
+		TickInterval:        cfg.TickInterval.AsDuration(),
+		MaxLead:             cfg.MaxLead.AsDuration(),
+		Calendars:           cfg.Calendars,
+		MaxConcurrentSpawns: cfg.MaxConcurrentSpawns,
+	})
+	go sc.Run(ctx)
+	log.Printf("serve: notify scheduler started")
+	return nil
 }

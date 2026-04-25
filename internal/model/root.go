@@ -17,6 +17,11 @@ type Root struct {
 	ByMonthDay []int    `yaml:"bymonthday,omitempty"`
 	Exceptions []string `yaml:"exceptions,omitempty"`
 
+	// Notify is the per-root notification rules. Inherited by every
+	// expanded occurrence unless the occurrence overrides with its own
+	// `notify:` field.
+	Notify []NotifyEntry `yaml:"notify,omitempty"`
+
 	// Body is the markdown body after the frontmatter. Copied into each
 	// expanded event verbatim.
 	Body string `yaml:"-"`
