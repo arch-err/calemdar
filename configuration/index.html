@@ -18,7 +18,7 @@
         <link rel="prev" href="../quickstart/">
       
       
-        <link rel="next" href="../cli/">
+        <link rel="next" href="../actions/">
       
       
         
@@ -512,10 +512,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationsntfy_url" class="md-nav__link">
+  <a href="#notificationstick_interval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.ntfy_url
+        notifications.tick_interval
       
     </span>
   </a>
@@ -523,10 +523,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationsntfy_topic" class="md-nav__link">
+  <a href="#notificationsmax_lead" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.ntfy_topic
+        notifications.max_lead
       
     </span>
   </a>
@@ -534,10 +534,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationslead_minutes" class="md-nav__link">
+  <a href="#notificationsmax_concurrent_spawns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.lead_minutes
+        notifications.max_concurrent_spawns
       
     </span>
   </a>
@@ -549,6 +549,39 @@
     <span class="md-ellipsis">
       
         notifications.calendars
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsbackendssystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.backends.system
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsbackendsntfy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.backends.ntfy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.actions
       
     </span>
   </a>
@@ -591,6 +624,33 @@
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -891,10 +951,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationsntfy_url" class="md-nav__link">
+  <a href="#notificationstick_interval" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.ntfy_url
+        notifications.tick_interval
       
     </span>
   </a>
@@ -902,10 +962,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationsntfy_topic" class="md-nav__link">
+  <a href="#notificationsmax_lead" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.ntfy_topic
+        notifications.max_lead
       
     </span>
   </a>
@@ -913,10 +973,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#notificationslead_minutes" class="md-nav__link">
+  <a href="#notificationsmax_concurrent_spawns" class="md-nav__link">
     <span class="md-ellipsis">
       
-        notifications.lead_minutes
+        notifications.max_concurrent_spawns
       
     </span>
   </a>
@@ -928,6 +988,39 @@
     <span class="md-ellipsis">
       
         notifications.calendars
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsbackendssystem" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.backends.system
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsbackendsntfy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.backends.ntfy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#notificationsactions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notifications.actions
       
     </span>
   </a>
@@ -1077,48 +1170,92 @@ update and usually a re-scaffold (<code>calemdar setup</code>).</p>
 <a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">special</span>
 </code></pre></div>
 <h3 id="notifications"><code>notifications</code><a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h3>
-<p>Upcoming-event push notifications via <a href="https://ntfy.sh">ntfy</a>. When
-enabled, the <code>serve</code> daemon runs a 60-second ticker that queries the
-store for upcoming events and POSTs to <code>&lt;ntfy_url&gt;/&lt;ntfy_topic&gt;</code> when a
-start time crosses one of the configured lead-minute windows. All-day
-events are skipped (no natural trigger time).</p>
+<p>Per-event notifications. Each event (or recurring root) declares its
+own <code>notify:</code> rules in the markdown frontmatter — see <a href="../schema/">Schema</a>
+— and the daemon dispatches them through one or more <strong>backends</strong>
+(currently <code>system</code> for libnotify-via-<code>notify-send</code>, and <code>ntfy</code> for
+ntfy.sh / self-hosted ntfy). A rule may also reference a named <strong>action</strong>
+that runs a local script when fired.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">notifications</span><span class="p">:</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">ntfy_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ntfy.sh</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">ntfy_topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-private-calemdar-topic</span>
-<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">lead_minutes</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">5</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">60</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># default</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">tick_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">max_lead</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">23h</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">  </span><span class="nt">max_concurrent_spawns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">calendars</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">           </span><span class="c1"># empty = all calendars</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">backends</span><span class="p">:</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="nt">system</span><span class="p">:</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">      </span><span class="c1"># binary_path: /usr/bin/notify-send   # override the default lookup</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">      </span><span class="c1"># urgency: low                         # low | normal | critical</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">ntfy</span><span class="p">:</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">      </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ntfy.sh</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">      </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">my-private-calemdar-topic</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">  </span><span class="nt">actions</span><span class="p">:</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                            </span><span class="c1"># opt-in</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="w">    </span><span class="c1"># config_path: ~/.config/calemdar/actions.yaml</span>
 </code></pre></div>
 <h4 id="notificationsenabled"><code>notifications.enabled</code><a class="headerlink" href="#notificationsenabled" title="Permanent link">&para;</a></h4>
 <p><strong>Type:</strong> boolean
 <strong>Default:</strong> <code>false</code></p>
-<p>Switch. When <code>false</code>, the daemon does nothing ntfy-related regardless of
-the other fields.</p>
-<h4 id="notificationsntfy_url"><code>notifications.ntfy_url</code><a class="headerlink" href="#notificationsntfy_url" title="Permanent link">&para;</a></h4>
-<p><strong>Type:</strong> string (URL)
-<strong>Default:</strong> none — required when <code>enabled</code></p>
-<p>Base URL of the ntfy server. Public <code>https://ntfy.sh</code> works; self-hosted
-instances work too.</p>
-<h4 id="notificationsntfy_topic"><code>notifications.ntfy_topic</code><a class="headerlink" href="#notificationsntfy_topic" title="Permanent link">&para;</a></h4>
-<p><strong>Type:</strong> string
-<strong>Default:</strong> none — required when <code>enabled</code></p>
-<p>Topic name appended to <code>ntfy_url</code>. Keep it unguessable if the server is
-public — anyone with the topic name can read and write.</p>
-<h4 id="notificationslead_minutes"><code>notifications.lead_minutes</code><a class="headerlink" href="#notificationslead_minutes" title="Permanent link">&para;</a></h4>
-<p><strong>Type:</strong> list of positive integers
-<strong>Default:</strong> <code>[5, 60]</code></p>
-<p>Minutes before an event to push. Each value produces its own notification.
-<code>[5, 60]</code> pushes once an hour out and once five minutes out.</p>
+<p>Master switch. With this off, the daemon never runs the scheduler — no
+backend is registered, no action runs, no <code>notify:</code> rule fires.</p>
+<h4 id="notificationstick_interval"><code>notifications.tick_interval</code><a class="headerlink" href="#notificationstick_interval" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> duration string (<code>30s</code>, <code>1m</code>, <code>5m</code>)
+<strong>Default:</strong> <code>1m</code></p>
+<p>How often the scheduler wakes up. Per-rule fire times are quantised to
+this interval, so a <code>lead: 5m</code> rule fires within <code>tick_interval</code> of the
+intended moment. Values below <code>30s</code> are rejected.</p>
+<h4 id="notificationsmax_lead"><code>notifications.max_lead</code><a class="headerlink" href="#notificationsmax_lead" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> duration string (<code>5m</code>, <code>1h</code>, <code>23h</code>)
+<strong>Default:</strong> <code>23h</code></p>
+<p>Caps the longest per-rule lead the scheduler will scan for. The cap
+exists so the lookahead query stays scoped to roughly today's events.
+Hard ceiling: 24h.</p>
+<h4 id="notificationsmax_concurrent_spawns"><code>notifications.max_concurrent_spawns</code><a class="headerlink" href="#notificationsmax_concurrent_spawns" title="Permanent link">&para;</a></h4>
+<p><strong>Type:</strong> integer
+<strong>Default:</strong> <code>4</code></p>
+<p>Caps the action runner's parallelism. A flurry of fires that all carry
+an action will queue at this depth.</p>
 <h4 id="notificationscalendars"><code>notifications.calendars</code><a class="headerlink" href="#notificationscalendars" title="Permanent link">&para;</a></h4>
 <p><strong>Type:</strong> list of strings
 <strong>Default:</strong> <code>[]</code> (all calendars)</p>
-<p>Restrict notifications to events in these calendars. Empty means all.</p>
-<p>You can verify configuration end-to-end without waiting for a real event:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span>
+<p>Restrict the scheduler to events in these calendars. Empty means all.</p>
+<h4 id="notificationsbackendssystem"><code>notifications.backends.system</code><a class="headerlink" href="#notificationsbackendssystem" title="Permanent link">&para;</a></h4>
+<p>The desktop-notification backend. Shells out to <code>notify-send</code> with the
+event title and a short body line.</p>
+<ul>
+<li><code>enabled</code> — boolean. Off by default.</li>
+<li><code>binary_path</code> — override the <code>notify-send</code> binary lookup.</li>
+<li><code>urgency</code> — <code>low</code> | <code>normal</code> | <code>critical</code>. Empty leaves <code>notify-send</code>'s
+  default.</li>
+</ul>
+<h4 id="notificationsbackendsntfy"><code>notifications.backends.ntfy</code><a class="headerlink" href="#notificationsbackendsntfy" title="Permanent link">&para;</a></h4>
+<p>The ntfy backend. POSTs to <code>&lt;url&gt;/&lt;topic&gt;</code> with the event title in the
+body and tags in the headers.</p>
+<ul>
+<li><code>enabled</code> — boolean. Off by default.</li>
+<li><code>url</code> — base URL (e.g. <code>https://ntfy.sh</code>).</li>
+<li><code>topic</code> — topic name. Keep it unguessable on public servers.</li>
+</ul>
+<h4 id="notificationsactions"><code>notifications.actions</code><a class="headerlink" href="#notificationsactions" title="Permanent link">&para;</a></h4>
+<p>Wires the script-runner side. Disabled by default — vault frontmatter
+cannot fire scripts unless you opt in.</p>
+<ul>
+<li><code>enabled</code> — boolean. Off by default.</li>
+<li><code>config_path</code> — override the actions file location. Empty falls back
+  to <code>~/.config/calemdar/actions.yaml</code> (XDG-aware).</li>
+</ul>
+<p>See <a href="../actions/">Actions</a> for the actions.yaml format and the trust
+model.</p>
+<p>You can verify backend wiring end-to-end without waiting for a real
+event:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w">          </span><span class="c1"># fires a test through every enabled backend</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>ntfy<span class="w">     </span><span class="c1"># restrict to one backend</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>calemdar<span class="w"> </span>notify<span class="w"> </span>actions<span class="w">       </span><span class="c1"># list registered actions</span>
 </code></pre></div>
-<p>This POSTs a single test push and exits. It does NOT gate on
-<code>enabled</code>, so you can confirm URL + topic before flipping the switch on
-the daemon.</p>
 <h2 id="full-example">Full example<a class="headerlink" href="#full-example" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">vault</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/home/you/obsidian/my-vault</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="nt">base_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;&quot;</span>
@@ -1136,10 +1273,18 @@ the daemon.</p>
 <a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">special</span>
 <a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="nt">notifications</span><span class="p">:</span>
 <a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a><span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
-<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span><span class="c1"># ntfy_url: https://ntfy.sh</span>
-<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span><span class="c1"># ntfy_topic: my-private-calemdar-topic</span>
-<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">  </span><span class="c1"># lead_minutes: [5, 60]</span>
-<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="w">  </span><span class="c1"># calendars: []</span>
+<a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a><span class="w">  </span><span class="nt">tick_interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1m</span>
+<a id="__codelineno-11-18" name="__codelineno-11-18" href="#__codelineno-11-18"></a><span class="w">  </span><span class="nt">max_lead</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">23h</span>
+<a id="__codelineno-11-19" name="__codelineno-11-19" href="#__codelineno-11-19"></a><span class="w">  </span><span class="nt">max_concurrent_spawns</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<a id="__codelineno-11-20" name="__codelineno-11-20" href="#__codelineno-11-20"></a><span class="w">  </span><span class="nt">backends</span><span class="p">:</span>
+<a id="__codelineno-11-21" name="__codelineno-11-21" href="#__codelineno-11-21"></a><span class="w">    </span><span class="nt">system</span><span class="p">:</span>
+<a id="__codelineno-11-22" name="__codelineno-11-22" href="#__codelineno-11-22"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-11-23" name="__codelineno-11-23" href="#__codelineno-11-23"></a><span class="w">    </span><span class="nt">ntfy</span><span class="p">:</span>
+<a id="__codelineno-11-24" name="__codelineno-11-24" href="#__codelineno-11-24"></a><span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<a id="__codelineno-11-25" name="__codelineno-11-25" href="#__codelineno-11-25"></a><span class="w">      </span><span class="c1"># url: https://ntfy.sh</span>
+<a id="__codelineno-11-26" name="__codelineno-11-26" href="#__codelineno-11-26"></a><span class="w">      </span><span class="c1"># topic: my-private-calemdar-topic</span>
+<a id="__codelineno-11-27" name="__codelineno-11-27" href="#__codelineno-11-27"></a><span class="w">  </span><span class="nt">actions</span><span class="p">:</span>
+<a id="__codelineno-11-28" name="__codelineno-11-28" href="#__codelineno-11-28"></a><span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
 </code></pre></div>
 <p>See also <a href="https://github.com/arch-err/calemdar/blob/main/examples/config.yaml"><code>examples/config.yaml</code></a>
 in the repo.</p>

@@ -345,6 +345,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
         
   
@@ -469,6 +496,17 @@
   
     <nav class="md-nav" aria-label="Recurring root">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notify-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notify: rules
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#v1-recurrence-coverage" class="md-nav__link">
@@ -659,6 +697,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#notify-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        notify: rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#v1-recurrence-coverage" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -794,11 +843,24 @@ is the UUID, not the filename. Rename at will.</p>
 <a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="nt">exceptions</span><span class="p">:</span><span class="w">                                 </span><span class="c1"># occurrence dates to skip</span>
 <a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-05-08</span>
 <a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-06-24</span>
-<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nn">---</span>
-<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>
-<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="l l-Scalar l-Scalar-Plain">Notes body is free-form markdown. Copied verbatim into each expanded event</span>
-<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="l l-Scalar l-Scalar-Plain">at expansion time.</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="nt">notify</span><span class="p">:</span><span class="w">                                     </span><span class="c1"># optional. inherited by every expansion</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lead</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span><span class="w">                                </span><span class="c1"># required. &quot;0&quot;, &quot;5m&quot;, &quot;1h&quot;, &quot;23h&quot; — bare integer = minutes</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">system</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">ntfy</span><span class="p p-Indicator">]</span><span class="w">                     </span><span class="c1"># optional. backends to dispatch via</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="w">    </span><span class="nt">action</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pre-meeting</span><span class="w">                     </span><span class="c1"># optional. action name in actions.yaml (laptop-local)</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="nn">---</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a><span class="l l-Scalar l-Scalar-Plain">Notes body is free-form markdown. Copied verbatim into each expanded event</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="l l-Scalar l-Scalar-Plain">at expansion time.</span>
 </code></pre></div>
+<h3 id="notify-rules"><code>notify:</code> rules<a class="headerlink" href="#notify-rules" title="Permanent link">&para;</a></h3>
+<p>Each entry runs at <code>event.start - lead</code>. At least one of <code>via</code> or
+<code>action</code> must be set. Maximum 16 rules per event/root. Min lead 1m, max
+lead 23h. See <a href="../configuration/">Configuration / notifications</a> and
+<a href="../actions/">Actions</a> for the daemon-side wiring.</p>
+<p>Rules attached to a root inherit into every expanded occurrence. An
+expanded occurrence may override by writing its own <code>notify:</code> (which
+also flips <code>user-owned: true</code>). An empty list (<code>notify: []</code>) on an
+occurrence opts that single occurrence out of all notifications.</p>
 <h3 id="v1-recurrence-coverage">v1 recurrence coverage<a class="headerlink" href="#v1-recurrence-coverage" title="Permanent link">&para;</a></h3>
 <ul>
 <li><code>freq: daily</code> + <code>interval: N</code> — every N days from <code>start-date</code>.</li>
@@ -824,11 +886,14 @@ and the server will not touch it again from root regen.</p>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="nt">series-id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">019073c4-d7e0-7d8f-a1f3-8b2c9e5f4a10</span><span class="w">   </span><span class="c1"># empty/absent = true one-off</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="nt">series-expanded-at</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2026-04-24T11:00:00Z</span><span class="w">    </span><span class="c1"># when server wrote this file (RFC 3339 UTC)</span>
 <a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="nt">user-owned</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">                            </span><span class="c1"># true = server will not regenerate this</span>
-<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nn">---</span>
-<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
-<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="p p-Indicator">[[</span><span class="nv">workout</span><span class="p p-Indicator">]]</span><span class="w">    </span><span class="c1"># body-level backlink to root. human convenience, server ignores.</span>
-<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
-<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="l l-Scalar l-Scalar-Plain">Notes body copied from root at expansion time.</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="nt">notify</span><span class="p">:</span><span class="w">                                      </span><span class="c1"># optional. copied from root at expansion time</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">lead</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5m</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">via</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">system</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="nn">---</span>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="p p-Indicator">[[</span><span class="nv">workout</span><span class="p p-Indicator">]]</span><span class="w">    </span><span class="c1"># body-level backlink to root. human convenience, server ignores.</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="l l-Scalar l-Scalar-Plain">Notes body copied from root at expansion time.</span>
 </code></pre></div>
 <h3 id="field-ownership">Field ownership<a class="headerlink" href="#field-ownership" title="Permanent link">&para;</a></h3>
 <table>

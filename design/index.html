@@ -345,6 +345,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cli/" class="md-nav__link">
         
   
@@ -636,22 +663,66 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notifications-v1-minimal-in-daemon" class="md-nav__link">
+  <a href="#notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notifications (v1: minimal, in-daemon)
+        Notifications
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Notifications (v1: minimal, in-daemon)">
+    <nav class="md-nav" aria-label="Notifications">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#next-rich-notification-system-designed-not-yet-built" class="md-nav__link">
+  <a href="#frontmatter-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next: rich notification system (designed, not yet built)
+        Frontmatter rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preflight-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preflight CLI
       
     </span>
   </a>
@@ -886,22 +957,66 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#notifications-v1-minimal-in-daemon" class="md-nav__link">
+  <a href="#notifications" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Notifications (v1: minimal, in-daemon)
+        Notifications
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Notifications (v1: minimal, in-daemon)">
+    <nav class="md-nav" aria-label="Notifications">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#next-rich-notification-system-designed-not-yet-built" class="md-nav__link">
+  <a href="#frontmatter-rules" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Next: rich notification system (designed, not yet built)
+        Frontmatter rules
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scheduler" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scheduler
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Actions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#preflight-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Preflight CLI
       
     </span>
   </a>
@@ -1112,55 +1227,75 @@ The cache exists to make lookups fast. If deleted, the server rebuilds it.</p>
 <li>Hosting: laptop for v1. Architecture is server-ready — moving to the
   home server is a packaging exercise, not a redesign.</li>
 </ul>
-<h2 id="notifications-v1-minimal-in-daemon">Notifications (v1: minimal, in-daemon)<a class="headerlink" href="#notifications-v1-minimal-in-daemon" title="Permanent link">&para;</a></h2>
-<p>What shipped in v1 is intentionally small: a single ntfy backend, wired into
-<code>calemdar serve</code> as a goroutine, with a "test ping" CLI for preflighting the
-URL/topic. No multi-backend, no per-event opt-in, no action scripts — those
-land in the next iteration (see "Next" below).</p>
+<h2 id="notifications">Notifications<a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h2>
+<p>The notification subsystem has three pieces: per-event <code>notify:</code> rules
+declared in vault frontmatter, a small set of pluggable <strong>backends</strong>
+that deliver the message, and an <strong>action runner</strong> that may also spawn
+a local script when a rule fires.</p>
+<h3 id="frontmatter-rules">Frontmatter rules<a class="headerlink" href="#frontmatter-rules" title="Permanent link">&para;</a></h3>
+<p>Every event and recurring root may carry a <code>notify:</code> list. Each entry
+is <code>{lead, via, action}</code> — <code>lead</code> is a duration string (<code>5m</code>, <code>1h</code>,
+<code>0</code>), <code>via</code> is the list of backends to dispatch to, <code>action</code> references
+a named entry in <code>~/.config/calemdar/actions.yaml</code>. At least one of
+<code>via</code> or <code>action</code> must be set per entry. Up to 16 entries per event;
+min lead 1m, max lead 23h.</p>
+<p>Rules attached to a root inherit into every expanded occurrence (copied
+verbatim into the expansion). An expanded occurrence may override by
+writing its own <code>notify:</code> (which flips <code>user-owned: true</code>). An empty
+list (<code>notify: []</code>) on an occurrence opts that single occurrence out.
+Edits to the root propagate to non-user-owned occurrences via the
+existing reconcile path.</p>
+<h3 id="backends">Backends<a class="headerlink" href="#backends" title="Permanent link">&para;</a></h3>
+<p>Backends register through <code>internal/notify.Register</code> at daemon start
+based on the resolved config:</p>
 <ul>
-<li><strong>In-daemon, not a separate binary.</strong> Earlier sketches proposed a
-  <code>calemdar-notify</code> binary on a <code>systemd --user</code> timer; the real shape is
-  simpler: when <code>notifications.enabled</code> is true, <code>internal/serve</code> spawns
-  <code>internal/notify.Notifier</code> as a goroutine on startup. One process, one
-  ticker.</li>
-<li><strong>Backend: ntfy only.</strong> A 60-second ticker (<code>tickInterval</code>) queries the
-  store via <code>ListUpcoming</code> for non-all-day occurrences whose start time
-  falls inside <code>now + lead ± 30s</code> for each configured <code>lead_minutes</code> value
-  (default <code>[5, 60]</code>). Matches POST to <code>&lt;ntfy_url&gt;/&lt;ntfy_topic&gt;</code> with a
-  short body (<code>title — in Nm @ HH:MM–HH:MM</code>) and <code>Tags: calendar,&lt;cal&gt;</code>.</li>
-<li><strong>Single topic.</strong> One URL, one topic, optional per-calendar allow-list
-  via <code>notifications.calendars</code> (empty = all).</li>
-<li><strong>Dedupe.</strong> In-memory map keyed by <code>&lt;path&gt;|&lt;lead&gt;</code>; GC'd daily so the
-  same event-lead pair never fires twice. Lost on daemon restart — a
-  daemon restart inside a lead window can re-fire, by design (cheap and
-  acceptable for v1).</li>
-<li><strong>All-day skipped.</strong> No natural trigger time, no notification.</li>
-<li><strong>Preflight CLI:</strong> <code>calemdar notify test</code> POSTs a single canned message
-  regardless of <code>notifications.enabled</code> so the user can confirm wiring
-  before flipping the daemon switch on. Errors if URL/topic unset.</li>
-<li><strong>Config validation:</strong> when <code>enabled: true</code>, <code>ntfy_url</code> and <code>ntfy_topic</code>
-  are required; topic must match <code>^[A-Za-z0-9_-]{1,64}$</code>; lead-minutes
-  must be positive. Enforced in <code>config.Validate</code>.</li>
+<li><code>system</code> — libnotify-via-<code>notify-send</code>. Title + body + tags.</li>
+<li><code>ntfy</code> — POSTs to <code>&lt;url&gt;/&lt;topic&gt;</code> with title in headers.</li>
 </ul>
-<h3 id="next-rich-notification-system-designed-not-yet-built">Next: rich notification system (designed, not yet built)<a class="headerlink" href="#next-rich-notification-system-designed-not-yet-built" title="Permanent link">&para;</a></h3>
-<p>Planned for the iteration after v1, not in current code:</p>
+<p>A backend is registered iff its <code>enabled</code> flag is true. Adding a new
+backend (Discord webhook, Slack, etc.) is a Go file plus a couple of
+config struct fields — no scheduler changes.</p>
+<h3 id="scheduler">Scheduler<a class="headerlink" href="#scheduler" title="Permanent link">&para;</a></h3>
+<p><code>internal/notify.Scheduler</code> runs as a goroutine inside <code>calemdar serve</code>.</p>
 <ul>
-<li><strong>Multi-backend.</strong> Add a system-notifications backend (libnotify /
-  desktop notifications) alongside ntfy, selectable per route.</li>
-<li><strong>Per-event opt-in / opt-out.</strong> Frontmatter flag on events (and roots,
-  inheritable) to override the global notify policy. Today, every
-  non-all-day event in a watched calendar fires.</li>
-<li><strong>Pre-notifications / lead-time per route.</strong> Today every backend fires
-  on the same <code>lead_minutes</code> list. The next iteration lets each route
-  define its own lead-time policy (e.g. ntfy at <code>[5, 60]</code>, desktop at
-  <code>[15]</code>).</li>
-<li><strong>Action runner.</strong> Run a user-defined script on notification fire (or
-  on event start), with the event's frontmatter passed as env. Use case:
-  pre-meeting "open the agenda doc" or "join the call" automation.</li>
-<li><strong>Reload / reconfigure without daemon restart.</strong> Today the notifier
-  copies its config at start-up; rich version exposes a SIGHUP path.</li>
+<li><strong>Tick:</strong> <code>tick_interval</code> (default <code>1m</code>).</li>
+<li><strong>Lookahead:</strong> queries the SQLite cache (<code>occurrences</code> table, filtered
+  by <code>notify_json IS NOT NULL</code>) for events with start in
+  <code>[now, now + max_lead]</code>. <code>max_lead</code> defaults to 23h, so the lookahead
+  is effectively today's events.</li>
+<li><strong>Fire:</strong> for each rule, <code>fire_at = event.start - lead</code>. The scheduler
+  fires rules whose <code>fire_at</code> lands in <code>(last_tick, now]</code>.</li>
+<li><strong>Dispatch:</strong> for each backend in <code>via</code>, call <code>Backend.Send(ctx, n)</code>.
+  If <code>action</code> is set and the actions runner is enabled, spawn the named
+  action with curated env (no parent-process env inheritance — keeps
+  daemon secrets out of action subprocesses).</li>
+<li><strong>Dedupe:</strong> persistent table <code>notify_fired(event_path, notify_index,
+  fire_at_planned)</code>. <code>IsFired</code> consulted on every candidate; <code>RecordFired</code>
+  inserts before dispatch (a crash mid-fire suppresses replay rather
+  than risking a double-fire).</li>
+<li><strong>Restart safety:</strong> on startup, <code>last_tick</code> is initialised to
+  <code>now - 2 * tick_interval</code> so the daemon picks up rules whose fire time
+  fell in the last couple of minutes but does NOT replay older history
+  (which would spam the user when a closed laptop wakes up).</li>
+<li><strong>Pruning:</strong> the nightly loop deletes <code>notify_fired</code> rows older than
+  14 days.</li>
 </ul>
-<p>These are intentionally not in v1. Don't read the code expecting them.</p>
+<h3 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h3>
+<p>Actions live in <code>~/.config/calemdar/actions.yaml</code> — local, NOT synced.
+This split is deliberate: vault frontmatter cannot contain script paths,
+only action <em>names</em>. The laptop-local actions file resolves names to
+commands. See <a href="../actions/">Actions</a> for the file format and full trust
+rationale.</p>
+<p>The runner spawns via <code>exec.CommandContext</code> with a curated env (only
+<code>PATH</code>, <code>HOME</code>, <code>USER</code>, <code>CALEMDAR_*</code>). A semaphore caps concurrency
+(<code>max_concurrent_spawns</code>, default 4). A per-action timeout (default 30s)
+kills runaway scripts.</p>
+<h3 id="preflight-cli">Preflight CLI<a class="headerlink" href="#preflight-cli" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>calemdar notify test [backend]</code> — fire a test through every enabled
+  backend, or just one named.</li>
+<li><code>calemdar notify actions</code> — list registered actions.</li>
+</ul>
 <h2 id="ics-export-deferred-maybe-never">ICS export (deferred, maybe-never)<a class="headerlink" href="#ics-export-deferred-maybe-never" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Not in v1.</li>

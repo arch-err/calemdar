@@ -15,7 +15,7 @@
         <link rel="canonical" href="https://arch-err.github.io/calemdar/cli/">
       
       
-        <link rel="prev" href="../configuration/">
+        <link rel="prev" href="../actions/">
       
       
         <link rel="next" href="../architecture/">
@@ -342,6 +342,33 @@
       
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../actions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Actions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
     
   
   
@@ -650,10 +677,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#calemdar-notify-test" class="md-nav__link">
+  <a href="#calemdar-notify-test-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar notify test
+        calemdar notify test [backend]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-notify-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar notify actions
       
     </span>
   </a>
@@ -1114,10 +1152,21 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#calemdar-notify-test" class="md-nav__link">
+  <a href="#calemdar-notify-test-backend" class="md-nav__link">
     <span class="md-ellipsis">
       
-        calemdar notify test
+        calemdar notify test [backend]
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#calemdar-notify-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        calemdar notify actions
       
     </span>
   </a>
@@ -1314,39 +1363,49 @@ daemon will not touch it.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>calemdar<span class="w"> </span>event<span class="w"> </span>show<span class="w"> </span>events/health/2026-05-03-workout.md
 </code></pre></div>
 <h2 id="notifications">Notifications<a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h2>
-<p>Configured via the <code>notifications:</code> block in
-<a href="../configuration/#notifications"><code>config.yaml</code></a>. When enabled, the
-<code>serve</code> daemon pushes upcoming events to an ntfy topic; these
-subcommands help set up and verify that path.</p>
-<h3 id="calemdar-notify-test"><code>calemdar notify test</code><a class="headerlink" href="#calemdar-notify-test" title="Permanent link">&para;</a></h3>
-<p>Send a single test push to the configured ntfy topic. Does NOT gate on
-<code>notifications.enabled</code> — the point is to prove the URL + topic work
-before flipping the daemon switch on.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span>
+<p>Per-event rules live in event/root frontmatter (<code>notify:</code> — see
+<a href="../schema/">Schema</a>). The daemon dispatches them through the backends
+enabled in <a href="../configuration/#notifications"><code>notifications.backends</code></a>
+and may also spawn local scripts via <a href="../actions/">actions</a>. These
+subcommands help set up and verify the wiring.</p>
+<h3 id="calemdar-notify-test-backend"><code>calemdar notify test [backend]</code><a class="headerlink" href="#calemdar-notify-test-backend" title="Permanent link">&para;</a></h3>
+<p>Fire a test message through every enabled backend, or one named.
+Bypasses the schedule layer entirely — the point is to prove backend
+wiring before any rule actually fires.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w">           </span><span class="c1"># every enabled backend</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>ntfy<span class="w">      </span><span class="c1"># restrict to ntfy</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>calemdar<span class="w"> </span>notify<span class="w"> </span><span class="nb">test</span><span class="w"> </span>system<span class="w">    </span><span class="c1"># restrict to system (notify-send)</span>
 </code></pre></div>
-<p>Errors if <code>ntfy_url</code> or <code>ntfy_topic</code> are missing.</p>
+<p>Errors if no matching backend is enabled or configured.</p>
+<h3 id="calemdar-notify-actions"><code>calemdar notify actions</code><a class="headerlink" href="#calemdar-notify-actions" title="Permanent link">&para;</a></h3>
+<p>List action entries registered in
+<code>~/.config/calemdar/actions.yaml</code> (or the path set in
+<code>notifications.actions.config_path</code>). Useful for confirming a name is
+known before referencing it in a <code>notify:</code> rule.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>calemdar<span class="w"> </span>notify<span class="w"> </span>actions
+</code></pre></div>
 <h2 id="config">Config<a class="headerlink" href="#config" title="Permanent link">&para;</a></h2>
 <h3 id="calemdar-config-path"><code>calemdar config path</code><a class="headerlink" href="#calemdar-config-path" title="Permanent link">&para;</a></h3>
 <p>Print the config file lookup path (does not check existence).</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>path
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>path
 </code></pre></div>
 <h3 id="calemdar-config-show"><code>calemdar config show</code><a class="headerlink" href="#calemdar-config-show" title="Permanent link">&para;</a></h3>
 <p>Print the active config — defaults merged with the file on disk. If no
 file exists, prints defaults with a note at the top.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>show
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>show
 </code></pre></div>
 <h3 id="calemdar-config-init-override"><code>calemdar config init [--override]</code><a class="headerlink" href="#calemdar-config-init-override" title="Permanent link">&para;</a></h3>
 <p>Write a default config file. Errors if one already exists, unless
 <code>--override</code> is passed. Drops into <code>$EDITOR</code> after writing if <code>$EDITOR</code>
 is set.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init
-<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--override<span class="w">    </span><span class="c1"># overwrite an existing file</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>calemdar<span class="w"> </span>config<span class="w"> </span>init<span class="w"> </span>--override<span class="w">    </span><span class="c1"># overwrite an existing file</span>
 </code></pre></div>
 <h3 id="calemdar-config-edit"><code>calemdar config edit</code><a class="headerlink" href="#calemdar-config-edit" title="Permanent link">&para;</a></h3>
 <p>Open the config in <code>$EDITOR</code> and validate on save. If the file does not
 exist, a default stub is written first. Invalid YAML or out-of-range
 values print diagnostics and leave the in-process config unchanged.</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>edit
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>calemdar<span class="w"> </span>config<span class="w"> </span>edit
 </code></pre></div>
 
 
