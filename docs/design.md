@@ -134,19 +134,24 @@ CREATE INDEX occurrences_series ON occurrences(series_id);
 
 ```
 calemdar serve                     # run the watcher + nightly timers
+calemdar setup                     # scaffold vault folders (idempotent)
 calemdar reindex                   # rebuild SQLite from disk
-calemdar expand <series-id>        # force-expand a single series
+calemdar reactor                   # one-shot scan for FC-authored recurring events
+calemdar expand <id-or-slug>       # force-expand a single series
 calemdar extend                    # extend the 12mo horizon for all series
 calemdar archive                   # archive events older than 6 months
 
 calemdar event new                 # create a one-off event interactively
-calemdar event list [--range=today|week|month|...]
+calemdar event list [--range=today|week|month|all]
 calemdar event show <path>
 
 calemdar series new                # create a recurring root interactively
 calemdar series list
 calemdar series show <id-or-slug>
 calemdar series except <id> <date> # add to exceptions list
+
+calemdar config path|show|init|edit
+calemdar notify test               # one-shot ntfy test push
 ```
 
 ## Concurrency / sync
@@ -165,17 +170,60 @@ calemdar series except <id> <date> # add to exceptions list
 - **Go.** Single static binary. Embeds daemon + CLI. Low memory, fast startup,
   fsnotify stdlib-adjacent, `modernc.org/sqlite` for pure-Go SQLite, no CGO.
 - Binary name: `calemdar`. Installed via `go install` or `just install`.
-- Hosting: laptop for v1. Architecture is server-ready — move to the home
-  server when notifications land.
+- Hosting: laptop for v1. Architecture is server-ready — moving to the
+  home server is a packaging exercise, not a redesign.
 
-## Notifications (deferred)
+## Notifications (v1: minimal, in-daemon)
 
-- Not in v1.
-- When added: a separate `calemdar-notify` binary reads the SQLite cache for
-  upcoming events in the next N minutes and pushes via ntfy (user's existing
-  channel). Runs via `systemd --user` timer, NOT the main daemon.
-- No browser notifications. No per-event config. One ntfy topic, one lead-time
-  setting per calendar.
+What shipped in v1 is intentionally small: a single ntfy backend, wired into
+`calemdar serve` as a goroutine, with a "test ping" CLI for preflighting the
+URL/topic. No multi-backend, no per-event opt-in, no action scripts — those
+land in the next iteration (see "Next" below).
+
+- **In-daemon, not a separate binary.** Earlier sketches proposed a
+  `calemdar-notify` binary on a `systemd --user` timer; the real shape is
+  simpler: when `notifications.enabled` is true, `internal/serve` spawns
+  `internal/notify.Notifier` as a goroutine on startup. One process, one
+  ticker.
+- **Backend: ntfy only.** A 60-second ticker (`tickInterval`) queries the
+  store via `ListUpcoming` for non-all-day occurrences whose start time
+  falls inside `now + lead ± 30s` for each configured `lead_minutes` value
+  (default `[5, 60]`). Matches POST to `<ntfy_url>/<ntfy_topic>` with a
+  short body (`title — in Nm @ HH:MM–HH:MM`) and `Tags: calendar,<cal>`.
+- **Single topic.** One URL, one topic, optional per-calendar allow-list
+  via `notifications.calendars` (empty = all).
+- **Dedupe.** In-memory map keyed by `<path>|<lead>`; GC'd daily so the
+  same event-lead pair never fires twice. Lost on daemon restart — a
+  daemon restart inside a lead window can re-fire, by design (cheap and
+  acceptable for v1).
+- **All-day skipped.** No natural trigger time, no notification.
+- **Preflight CLI:** `calemdar notify test` POSTs a single canned message
+  regardless of `notifications.enabled` so the user can confirm wiring
+  before flipping the daemon switch on. Errors if URL/topic unset.
+- **Config validation:** when `enabled: true`, `ntfy_url` and `ntfy_topic`
+  are required; topic must match `^[A-Za-z0-9_-]{1,64}$`; lead-minutes
+  must be positive. Enforced in `config.Validate`.
+
+### Next: rich notification system (designed, not yet built)
+
+Planned for the iteration after v1, not in current code:
+
+- **Multi-backend.** Add a system-notifications backend (libnotify /
+  desktop notifications) alongside ntfy, selectable per route.
+- **Per-event opt-in / opt-out.** Frontmatter flag on events (and roots,
+  inheritable) to override the global notify policy. Today, every
+  non-all-day event in a watched calendar fires.
+- **Pre-notifications / lead-time per route.** Today every backend fires
+  on the same `lead_minutes` list. The next iteration lets each route
+  define its own lead-time policy (e.g. ntfy at `[5, 60]`, desktop at
+  `[15]`).
+- **Action runner.** Run a user-defined script on notification fire (or
+  on event start), with the event's frontmatter passed as env. Use case:
+  pre-meeting "open the agenda doc" or "join the call" automation.
+- **Reload / reconfigure without daemon restart.** Today the notifier
+  copies its config at start-up; rich version exposes a SIGHUP path.
+
+These are intentionally not in v1. Don't read the code expecting them.
 
 ## ICS export (deferred, maybe-never)
 
