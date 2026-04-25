@@ -123,7 +123,17 @@ Detailed view of one series — every frontmatter field plus the file path.
 calemdar series show workout
 ```
 
-### `calemdar recurring delete <id-or-slug> [--purge-events]`
+### `calemdar recurring list`
+
+List every active recurring series. Same column shape as `series list`,
+exposed under `recurring` for one-stop discovery alongside the safeguard
+ops.
+
+```sh
+calemdar recurring list
+```
+
+### `calemdar recurring delete [id-or-slug] [--purge-events] [-l]`
 
 Safe-delete a recurring root. Drops a backup copy under
 `<vault>/.calemdar/backup/recurring/<slug>-<RFC3339-utc>.md` (laptop-local,
@@ -135,32 +145,33 @@ events for this series. Past events stay (archive-bound). User-owned
 events are always preserved — they stand on their own once the user has
 edited them.
 
+With `-l` (or `--list`), prints the deletable series and exits — same
+output as `recurring list`. Slug-less invocation without `-l` errors
+out with a usage hint.
+
 ```sh
+calemdar recurring delete -l                       # show what's deletable
 calemdar recurring delete workout
 calemdar recurring delete workout --purge-events
 ```
 
-### `calemdar recurring restore <slug>`
+### `calemdar recurring restore [slug] [-l]`
 
 Find the most recent backup matching `<slug>-*.md` under
 `<vault>/.calemdar/backup/recurring/` and copy it back to
 `recurring/<slug>.md`. Refuses to overwrite an existing root — move it
 out of the way first.
 
+With `-l` (or `--list`), prints every backup grouped by slug, newest
+first. This replaces the older `backup-list` subcommand.
+
 ```sh
+calemdar recurring restore -l                      # show available backups
 calemdar recurring restore workout
 ```
 
-The daemon (if running) will pick up the new file via fsnotify and
+The daemon (if running) will pick up the restored file via fsnotify and
 reconcile. If you're running standalone, follow up with `calemdar reindex`.
-
-### `calemdar recurring backup-list`
-
-List every recurring backup, grouped by slug, newest first.
-
-```sh
-calemdar recurring backup-list
-```
 
 ### `calemdar series except <id-or-slug> <date>`
 

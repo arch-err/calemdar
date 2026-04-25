@@ -12,39 +12,79 @@ import (
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/series"
 	"github.com/arch-err/calemdar/internal/store"
+	"github.com/arch-err/calemdar/internal/vault"
 	"github.com/arch-err/calemdar/internal/writer"
 	"github.com/spf13/cobra"
 )
 
 var recurringCmd = &cobra.Command{
 	Use:   "recurring",
-	Short: "Recurring root deletion safeguards (delete / restore / backup-list)",
+	Short: "Manage recurring roots — list, delete (with snapshot), restore",
+}
+
+var recurringListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List all recurring series currently on disk",
+	RunE:  runRecurringList,
 }
 
 var recurringDeleteCmd = &cobra.Command{
-	Use:   "delete <id-or-slug>",
+	Use:   "delete [id-or-slug]",
 	Short: "Delete a recurring root with proper bookkeeping (snapshot, optional event purge)",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runRecurringDelete,
 }
 
 var recurringRestoreCmd = &cobra.Command{
-	Use:   "restore <slug>",
+	Use:   "restore [slug]",
 	Short: "Restore the most recent backup for slug into recurring/<slug>.md",
-	Args:  cobra.ExactArgs(1),
+	Args:  cobra.MaximumNArgs(1),
 	RunE:  runRecurringRestore,
-}
-
-var recurringBackupListCmd = &cobra.Command{
-	Use:   "backup-list",
-	Short: "List recurring-root backups, grouped by slug",
-	RunE:  runRecurringBackupList,
 }
 
 func init() {
 	recurringDeleteCmd.Flags().Bool("purge-events", false,
 		"also delete future non-user-owned expanded events for this series")
-	recurringCmd.AddCommand(recurringDeleteCmd, recurringRestoreCmd, recurringBackupListCmd)
+	recurringDeleteCmd.Flags().BoolP("list", "l", false,
+		"list deletable recurring series and exit")
+	recurringRestoreCmd.Flags().BoolP("list", "l", false,
+		"list available backups and exit")
+	recurringCmd.AddCommand(recurringListCmd, recurringDeleteCmd, recurringRestoreCmd)
+}
+
+// runRecurringList prints the active recurring roots as a table. Same shape
+// as `series list` but lives under `recurring` so the safeguard cli is
+// self-contained.
+func runRecurringList(cmd *cobra.Command, args []string) error {
+	v, err := resolveVault(cmd)
+	if err != nil {
+		return err
+	}
+	return printSeriesTable(v)
+}
+
+// printSeriesTable lists series in column form. Shared between `recurring
+// list` and `recurring delete -l`.
+func printSeriesTable(v *vault.Vault) error {
+	roots, err := series.LoadAll(v)
+	if err != nil {
+		return err
+	}
+	if len(roots) == 0 {
+		fmt.Println("no recurring series")
+		return nil
+	}
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	fmt.Fprintln(w, "SLUG\tCALENDAR\tTITLE\tFREQ\tINTERVAL\tSTART\tUNTIL")
+	for _, r := range roots {
+		until := r.Until
+		if until == "" {
+			until = "-"
+		}
+		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%d\t%s\t%s\n",
+			r.Slug, r.Calendar, r.Title, r.Freq, r.Interval, r.StartDate, until)
+	}
+	return w.Flush()
 }
 
 // runRecurringDelete is the safe-delete CLI. Order:
@@ -61,6 +101,14 @@ func runRecurringDelete(cmd *cobra.Command, args []string) error {
 	v, err := resolveVault(cmd)
 	if err != nil {
 		return err
+	}
+
+	listMode, _ := cmd.Flags().GetBool("list")
+	if listMode {
+		return printSeriesTable(v)
+	}
+	if len(args) == 0 {
+		return fmt.Errorf("missing series id-or-slug — use `calemdar recurring delete -l` to list options")
 	}
 	purgeEvents, _ := cmd.Flags().GetBool("purge-events")
 
@@ -145,13 +193,20 @@ func runRecurringDelete(cmd *cobra.Command, args []string) error {
 }
 
 // runRecurringRestore copies the most recent backup file matching slug
-// back to <vault>/recurring/<slug>.md. Refuses to overwrite an existing
-// file — the user must move it out of the way first (or use `recurring
-// delete <slug>` if they really want to replace it).
+// back to <vault>/recurring/<slug>.md. With -l, just prints the backup
+// inventory. Refuses to overwrite an existing root file.
 func runRecurringRestore(cmd *cobra.Command, args []string) error {
 	v, err := resolveVault(cmd)
 	if err != nil {
 		return err
+	}
+
+	listMode, _ := cmd.Flags().GetBool("list")
+	if listMode {
+		return printBackupTable(v)
+	}
+	if len(args) == 0 {
+		return fmt.Errorf("missing slug — use `calemdar recurring restore -l` to list backups")
 	}
 	slug := args[0]
 
@@ -183,12 +238,9 @@ func runRecurringRestore(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// runRecurringBackupList prints every backup grouped by slug, newest first.
-func runRecurringBackupList(cmd *cobra.Command, args []string) error {
-	v, err := resolveVault(cmd)
-	if err != nil {
-		return err
-	}
+// printBackupTable lists every backup grouped by slug, newest first.
+// Shared between `recurring restore -l` and a future audit cli if needed.
+func printBackupTable(v *vault.Vault) error {
 	all, err := backup.List(v)
 	if err != nil {
 		return err

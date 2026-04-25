@@ -227,6 +227,132 @@ func TestRecurringRestoreNoBackup(t *testing.T) {
 	}
 }
 
+func TestRecurringListPrintsActiveSeries(t *testing.T) {
+	_ = newFixture(t)
+
+	finish := captureStdout(t)
+	cmd := &cobra.Command{}
+	cmd.PersistentFlags().String("vault", "", "")
+	if err := runRecurringList(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := finish()
+	if !strings.Contains(out, "workout") || !strings.Contains(out, "health") {
+		t.Errorf("expected workout/health in output: %q", out)
+	}
+}
+
+func TestRecurringDeleteListMode(t *testing.T) {
+	f := newFixture(t)
+
+	finish := captureStdout(t)
+	cmd := &cobra.Command{}
+	cmd.PersistentFlags().String("vault", "", "")
+	cmd.Flags().Bool("purge-events", false, "")
+	cmd.Flags().BoolP("list", "l", true, "")
+	if err := runRecurringDelete(cmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := finish()
+	if _, err := os.Stat(f.rootPath); err != nil {
+		t.Errorf("root should NOT have been deleted in list mode: %v", err)
+	}
+	if !strings.Contains(out, "workout") {
+		t.Errorf("list output missing workout: %q", out)
+	}
+}
+
+func TestRecurringDeleteWithoutSlugErrors(t *testing.T) {
+	_ = newFixture(t)
+
+	cmd := &cobra.Command{}
+	cmd.PersistentFlags().String("vault", "", "")
+	cmd.Flags().Bool("purge-events", false, "")
+	cmd.Flags().BoolP("list", "l", false, "")
+	err := runRecurringDelete(cmd, nil)
+	if err == nil {
+		t.Fatal("expected error when no slug + no -l")
+	}
+	if !strings.Contains(err.Error(), "missing series") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+func TestRecurringRestoreListMode(t *testing.T) {
+	f := newFixture(t)
+
+	if _, err := backup.WriteFromFile(f.v, "workout", f.rootPath, model.Today(model.Location())); err != nil {
+		t.Fatal(err)
+	}
+
+	finish := captureStdout(t)
+	rcmd := &cobra.Command{}
+	rcmd.PersistentFlags().String("vault", "", "")
+	rcmd.Flags().BoolP("list", "l", true, "")
+	if err := runRecurringRestore(rcmd, nil); err != nil {
+		t.Fatal(err)
+	}
+	out := finish()
+	if !strings.Contains(out, "workout") {
+		t.Errorf("backup list missing workout: %q", out)
+	}
+}
+
+func TestRecurringRestoreWithoutSlugErrors(t *testing.T) {
+	_ = newFixture(t)
+
+	rcmd := &cobra.Command{}
+	rcmd.PersistentFlags().String("vault", "", "")
+	rcmd.Flags().BoolP("list", "l", false, "")
+	err := runRecurringRestore(rcmd, nil)
+	if err == nil {
+		t.Fatal("expected error when no slug + no -l")
+	}
+	if !strings.Contains(err.Error(), "missing slug") {
+		t.Errorf("unexpected error: %v", err)
+	}
+}
+
+// captureStdout replaces os.Stdout with a pipe; returns a finish() that
+// closes the pipe, restores stdout, and returns the captured output.
+// Calling finish() exactly once ends the capture. Cheap way to test
+// cobra runners that fmt.Println directly without races.
+func captureStdout(t *testing.T) func() string {
+	t.Helper()
+	orig := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+
+	type result struct {
+		out string
+		err error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		var sb strings.Builder
+		buf := make([]byte, 4096)
+		for {
+			n, err := r.Read(buf)
+			if n > 0 {
+				sb.Write(buf[:n])
+			}
+			if err != nil {
+				ch <- result{out: sb.String()}
+				return
+			}
+		}
+	}()
+	return func() string {
+		w.Close()
+		os.Stdout = orig
+		res := <-ch
+		return res.out
+	}
+}
+
 func TestBackupListAndRestoreRoundTrip(t *testing.T) {
 	f := newFixture(t)
 
