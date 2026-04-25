@@ -112,7 +112,9 @@ CREATE TABLE series (
   all_day INTEGER NOT NULL,        -- 0 or 1
   exceptions TEXT,                 -- JSON array
   root_path TEXT NOT NULL,         -- relative path for quick lookup
-  root_mtime INTEGER NOT NULL      -- unix seconds
+  root_mtime INTEGER NOT NULL,     -- unix seconds
+  body_raw TEXT                    -- full file contents (frontmatter + body)
+                                   -- snapshot for delete-safeguard auto-restore
 );
 
 CREATE TABLE occurrences (
@@ -149,6 +151,10 @@ calemdar series new                # create a recurring root interactively
 calemdar series list
 calemdar series show <id-or-slug>
 calemdar series except <id> <date> # add to exceptions list
+
+calemdar recurring delete <id-or-slug> [--purge-events]
+calemdar recurring restore <slug>  # from .calemdar/backup/recurring/
+calemdar recurring backup-list
 
 calemdar config path|show|init|edit
 calemdar notify test               # one-shot ntfy test push
@@ -252,6 +258,77 @@ kills runaway scripts.
 - `calemdar notify test [backend]` — fire a test through every enabled
   backend, or just one named.
 - `calemdar notify actions` — list registered actions.
+
+## Deletion safety
+
+A recurring root is the source of truth for an entire series. A single
+errant `rm` (or sync-peer delete, or accidental Obsidian "delete file"
+click) destroys the template that every future occurrence is expanded
+from. v1.1 adds a three-layer safeguard.
+
+### Layer 1 — sqlite snapshot
+
+The `series` table carries a `body_raw` column that holds the full file
+contents (frontmatter + body) as it was on disk at the most recent
+parse. Every `UpsertSeries` rewrites this snapshot, so the cache is
+always at-most-one-edit-stale. This is the recovery source.
+
+The cache file lives at `<vault>/.calemdar/cache.db` — laptop-local,
+NOT synced. That's intentional: a sync-peer delete wipes the file but
+not the snapshot.
+
+### Layer 2 — filesystem backup
+
+Before the daemon rewrites a deleted root from the snapshot, it mirrors
+the snapshot to:
+
+```
+<vault>/.calemdar/backup/recurring/<slug>-<RFC3339-utc>.md
+```
+
+The `recurring delete` CLI also writes a backup before removing the
+file. Backups accumulate; nothing prunes them automatically. The
+`recurring backup-list` CLI prints what's there.
+
+`.calemdar/` is excluded from sync by convention (Syncthing ignore the
+folder) — backups are per-laptop, intentional.
+
+### Layer 3 — fsnotify auto-restore
+
+The watcher already had `NotifySelfWrite` to suppress events for files
+the daemon itself wrote. v1.1 adds `NotifySelfDelete`, which marks a
+path as "about to be deleted by us" before the syscall — required
+because deletes erase the inode, leaving nothing to stat afterwards.
+
+When fsnotify fires DELETE on `<base>/recurring/<slug>.md`:
+
+- **Self-delete flag set** → no-op. The CLI's `recurring delete` is the
+  only caller that sets it.
+- **Flag NOT set** → external delete. Daemon logs a WARNING, mirrors
+  the sqlite snapshot to the backup dir, and rewrites the root file
+  from the snapshot. Single-shot — if the same path gets deleted again
+  immediately, fsnotify fires again and we restore again. We don't loop
+  internally and we don't try to outpace a sync conflict.
+
+### CLI surface
+
+- `calemdar recurring delete <id-or-slug> [--purge-events]` — proper
+  cleanup: backup → optional event cascade → file remove (with
+  self-delete flag) → sqlite cleanup. Past events are never touched;
+  user-owned events are preserved even with `--purge-events`.
+- `calemdar recurring restore <slug>` — re-materialises the most recent
+  backup as `recurring/<slug>.md`. Refuses to overwrite.
+- `calemdar recurring backup-list` — inventory.
+
+### What this does NOT solve
+
+- Sync conflict files in `recurring/` (`.sync-conflict-*`). Out of
+  scope; surfaced in logs already.
+- Truly out-of-band file corruption (disk error). The snapshot is
+  fresh-as-of-last-edit, so up to one edit can be lost on restore.
+- Multi-device race where two laptops both write conflicting versions
+  of the same root. v1 already specifies "only one device runs the
+  daemon"; sync resolves the rest as normal Syncthing conflicts.
 
 ## ICS export (deferred, maybe-never)
 

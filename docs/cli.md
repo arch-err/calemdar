@@ -123,6 +123,45 @@ Detailed view of one series — every frontmatter field plus the file path.
 calemdar series show workout
 ```
 
+### `calemdar recurring delete <id-or-slug> [--purge-events]`
+
+Safe-delete a recurring root. Drops a backup copy under
+`<vault>/.calemdar/backup/recurring/<slug>-<RFC3339-utc>.md` (laptop-local,
+not synced), removes the root file with the self-delete flag set so the
+watcher does NOT auto-restore, and clears the sqlite series row.
+
+With `--purge-events`, also removes future non-user-owned expanded
+events for this series. Past events stay (archive-bound). User-owned
+events are always preserved — they stand on their own once the user has
+edited them.
+
+```sh
+calemdar recurring delete workout
+calemdar recurring delete workout --purge-events
+```
+
+### `calemdar recurring restore <slug>`
+
+Find the most recent backup matching `<slug>-*.md` under
+`<vault>/.calemdar/backup/recurring/` and copy it back to
+`recurring/<slug>.md`. Refuses to overwrite an existing root — move it
+out of the way first.
+
+```sh
+calemdar recurring restore workout
+```
+
+The daemon (if running) will pick up the new file via fsnotify and
+reconcile. If you're running standalone, follow up with `calemdar reindex`.
+
+### `calemdar recurring backup-list`
+
+List every recurring backup, grouped by slug, newest first.
+
+```sh
+calemdar recurring backup-list
+```
+
 ### `calemdar series except <id-or-slug> <date>`
 
 Add a date to the series' `exceptions` list and reconcile. The occurrence
