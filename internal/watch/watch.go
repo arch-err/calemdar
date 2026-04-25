@@ -65,6 +65,11 @@ type Watcher struct {
 
 	pendingMu sync.Mutex
 	pending   map[string]*pendingEvent
+
+	// inFlight tracks scheduled-but-unfinished debounce-fire goroutines.
+	// Stop drains it before closing w.events so a parallel send doesn't
+	// hit a closed channel.
+	inFlight sync.WaitGroup
 }
 
 type pendingEvent struct {
@@ -129,10 +134,15 @@ func StartWithDebounce(v *vault.Vault, debounce time.Duration) (*Watcher, error)
 // Events returns the channel of coalesced events.
 func (w *Watcher) Events() <-chan Event { return w.events }
 
-// Stop closes the watcher and its events channel.
+// Stop closes the watcher cleanly. Order matters: signal goroutines via
+// done, close fsnotify, drain in-flight fires, then close the events
+// channel. Each step ensures the next can run without races.
 func (w *Watcher) Stop() error {
 	close(w.done)
-	return w.fs.Close()
+	err := w.fs.Close()
+	w.inFlight.Wait()
+	close(w.events)
+	return err
 }
 
 // NotifySelfWrite records a server-initiated write. Must be called AFTER
@@ -273,15 +283,33 @@ func (w *Watcher) enqueue(src Source, kind Kind, path string) {
 	defer w.pendingMu.Unlock()
 
 	if p, ok := w.pending[path]; ok {
-		p.timer.Stop()
+		// Reset existing timer. Stop returns true iff the existing timer
+		// was still pending; if it had already fired, the existing fire
+		// goroutine will Done itself, so we only Add for the replacement
+		// when Stop succeeded.
+		if p.timer.Stop() {
+			// keep inFlight counter even — replace the cancelled timer.
+		} else {
+			w.inFlight.Add(1)
+		}
 		p.kind = kind
 		p.src = src
-		p.timer = time.AfterFunc(w.debounce, func() { w.fire(path) })
+		p.timer = time.AfterFunc(w.debounce, w.firer(path))
 		return
 	}
+	w.inFlight.Add(1)
 	p := &pendingEvent{kind: kind, src: src}
-	p.timer = time.AfterFunc(w.debounce, func() { w.fire(path) })
+	p.timer = time.AfterFunc(w.debounce, w.firer(path))
 	w.pending[path] = p
+}
+
+// firer wraps fire(path) with the inFlight Done so every scheduled
+// goroutine balances its Add. Used by enqueue when scheduling timers.
+func (w *Watcher) firer(path string) func() {
+	return func() {
+		defer w.inFlight.Done()
+		w.fire(path)
+	}
 }
 
 func (w *Watcher) fire(path string) {
@@ -317,14 +345,25 @@ func (w *Watcher) fire(path string) {
 	}
 }
 
+// flushPending drops every queued debounce timer and cleans the pending
+// map. Each timer that hadn't yet fired (Stop returns true) had its
+// inFlight counter incremented when it was scheduled, so we Done it
+// here. Timers that already fired (Stop returns false) will Done
+// themselves when the goroutine finishes.
+//
+// We intentionally do NOT close w.events here: Stop is responsible for
+// the close, and only after inFlight has drained — otherwise an
+// in-flight fire goroutine sending on the channel races a close and
+// panics.
 func (w *Watcher) flushPending() {
 	w.pendingMu.Lock()
 	defer w.pendingMu.Unlock()
 	for _, p := range w.pending {
-		p.timer.Stop()
+		if p.timer.Stop() {
+			w.inFlight.Done()
+		}
 	}
 	w.pending = map[string]*pendingEvent{}
-	close(w.events)
 }
 
 func (w *Watcher) classify(path string) (Source, bool) {
