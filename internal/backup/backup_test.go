@@ -132,3 +132,39 @@ func TestFilenameStampNoColons(t *testing.T) {
 		t.Errorf("malformed filename: %q", got)
 	}
 }
+
+func TestPruneRemovesOldKeepsNew(t *testing.T) {
+	v := newVault(t)
+	old := time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC)
+	mid := time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)
+	recent := time.Date(2026, 4, 25, 0, 0, 0, 0, time.UTC)
+
+	for _, w := range []time.Time{old, mid, recent} {
+		if _, err := WriteFromBytes(v, "workout", []byte("x"), w); err != nil {
+			t.Fatal(err)
+		}
+	}
+	cutoff := time.Date(2026, 2, 15, 0, 0, 0, 0, time.UTC)
+	n, err := Prune(v, cutoff)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 1 {
+		t.Errorf("removed = %d, want 1", n)
+	}
+	all, _ := List(v)
+	if len(all) != 2 {
+		t.Errorf("after prune got %d backups, want 2", len(all))
+	}
+}
+
+func TestPruneEmptyDirNoError(t *testing.T) {
+	v := newVault(t)
+	n, err := Prune(v, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Errorf("removed = %d, want 0 on empty dir", n)
+	}
+}

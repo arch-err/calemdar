@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/arch-err/calemdar/internal/archive"
+	"github.com/arch-err/calemdar/internal/backup"
 	"github.com/arch-err/calemdar/internal/config"
 	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/reconcile"
@@ -53,5 +54,15 @@ func runNightly(opts Options) {
 		} else if n > 0 {
 			log.Printf("serve: nightly pruned %d notify_fired rows", n)
 		}
+	}
+
+	// Prune the recurring-root backup directory. 30 days keeps a useful
+	// undo window (recurring delete + ~immediate restore) without
+	// growing unbounded for users that frequently iterate on roots.
+	bcutoff := time.Now().Add(-30 * 24 * time.Hour)
+	if n, err := backup.Prune(opts.Vault, bcutoff); err != nil {
+		log.Printf("serve: nightly prune backups: %v", err)
+	} else if n > 0 {
+		log.Printf("serve: nightly pruned %d backup files", n)
 	}
 }

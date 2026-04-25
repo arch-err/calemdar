@@ -132,6 +132,33 @@ func LatestForSlug(v *vault.Vault, slug string) (*Entry, error) {
 	return best, nil
 }
 
+// Prune deletes every backup file whose `When` timestamp is older than
+// `cutoff`. Returns the number of files removed. Safe to call when the
+// backup dir doesn't exist (returns 0). Best-effort: a failed
+// individual remove is logged via the returned error but does not stop
+// the sweep.
+func Prune(v *vault.Vault, cutoff time.Time) (int, error) {
+	all, err := List(v)
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	var firstErr error
+	for _, e := range all {
+		if !e.When.Before(cutoff) {
+			continue
+		}
+		if rerr := os.Remove(e.Path); rerr != nil && !os.IsNotExist(rerr) {
+			if firstErr == nil {
+				firstErr = fmt.Errorf("prune %s: %w", e.Filename, rerr)
+			}
+			continue
+		}
+		removed++
+	}
+	return removed, firstErr
+}
+
 // parseEntry expects a filename of the form <slug>-<RFC3339-utc>.md
 // where the timestamp uses dashes instead of colons. Returns ok=false on
 // any parse miss; caller silently skips.
