@@ -319,6 +319,43 @@ func (s *Store) GetOccurrenceByPath(path string) (*model.Event, error) {
 	return &e, nil
 }
 
+// ListOccurrencesBySeriesID returns every cached occurrence whose
+// series_id matches id. Body is left empty — reconcile only needs
+// metadata (date, user_owned, path), and skipping the file walk + YAML
+// parse is the whole point.
+//
+// This is the store-backed replacement for series.LoadEventsForSeries,
+// used by reconcile to compute the existing-events set without
+// re-reading the entire calendar's events directory on every change.
+func (s *Store) ListOccurrencesBySeriesID(id string) ([]*model.Event, error) {
+	rows, err := s.db.Query(`SELECT path, series_id, date, title,
+		start_time, end_time, all_day, user_owned, expanded_at
+		FROM occurrences WHERE series_id = ? ORDER BY date`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*model.Event
+	for rows.Next() {
+		var e model.Event
+		var seriesID, startTime, endTime, expandedAt sql.NullString
+		var allDay, userOwned int
+		if err := rows.Scan(&e.Path, &seriesID, &e.Date, &e.Title,
+			&startTime, &endTime, &allDay, &userOwned, &expandedAt); err != nil {
+			return nil, err
+		}
+		e.SeriesID = seriesID.String
+		e.StartTime = startTime.String
+		e.EndTime = endTime.String
+		e.AllDay = allDay != 0
+		e.UserOwned = userOwned != 0
+		e.SeriesExpandedAt = expandedAt.String
+		e.Type = "single"
+		out = append(out, &e)
+	}
+	return out, rows.Err()
+}
+
 // ListOccurrencesInRange returns occurrences with from <= date <= to.
 // Dates are YYYY-MM-DD strings (lexicographic comparison is correct).
 func (s *Store) ListOccurrencesInRange(from, to string) ([]*model.Event, error) {

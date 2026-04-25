@@ -146,7 +146,7 @@ func runSeriesNew(cmd *cobra.Command, args []string) error {
 		return err
 	}
 	if reconcileNow {
-		rep, err := reconcile.Series(v, r)
+		rep, err := reconcile.Series(v, r, nil)
 		if err != nil {
 			return err
 		}
@@ -193,7 +193,7 @@ func runSeriesExcept(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("added %s to exceptions for %s\n", date, r.Slug)
 
-	rep, err := reconcile.Series(v, r)
+	rep, err := reconcile.Series(v, r, nil)
 	if err != nil {
 		return err
 	}

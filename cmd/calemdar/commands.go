@@ -63,7 +63,7 @@ func runExpand(cmd *cobra.Command, args []string) error {
 	if r == nil {
 		return fmt.Errorf("series %q not found", args[0])
 	}
-	rep, err := reconcile.Series(v, r)
+	rep, err := reconcile.Series(v, r, nil)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func runExtend(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 	for _, r := range roots {
-		rep, err := reconcile.Series(v, r)
+		rep, err := reconcile.Series(v, r, nil)
 		if err != nil {
 			return err
 		}

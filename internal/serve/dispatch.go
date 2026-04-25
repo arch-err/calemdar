@@ -47,7 +47,7 @@ func dispatchRecurring(opts Options, ev watch.Event) error {
 		log.Printf("serve: ignoring unparseable recurring %s: %v", ev.Path, err)
 		return nil
 	}
-	rep, err := reconcile.Series(opts.Vault, r)
+	rep, err := reconcile.Series(opts.Vault, r, func() ([]*model.Event, error) { return opts.Store.ListOccurrencesBySeriesID(r.ID) })
 	if err != nil {
 		return err
 	}
@@ -227,7 +227,7 @@ func stickyDeleteAddException(opts Options, occ *model.Event) error {
 		return fmt.Errorf("write root: %w", err)
 	}
 
-	rep, err := reconcile.Series(opts.Vault, r)
+	rep, err := reconcile.Series(opts.Vault, r, func() ([]*model.Event, error) { return opts.Store.ListOccurrencesBySeriesID(r.ID) })
 	if err != nil {
 		return fmt.Errorf("reconcile after exception: %w", err)
 	}

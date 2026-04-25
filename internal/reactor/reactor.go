@@ -122,7 +122,7 @@ func migrateOne(v *vault.Vault, path, kind string) (*Migration, error) {
 	}
 	writer.NotifySelf(path)
 
-	rep, err := reconcile.Series(v, r)
+	rep, err := reconcile.Series(v, r, nil)
 	if err != nil {
 		return nil, err
 	}

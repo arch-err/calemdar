@@ -6,6 +6,7 @@ import (
 
 	"github.com/arch-err/calemdar/internal/archive"
 	"github.com/arch-err/calemdar/internal/config"
+	"github.com/arch-err/calemdar/internal/model"
 	"github.com/arch-err/calemdar/internal/reconcile"
 	"github.com/arch-err/calemdar/internal/series"
 )
@@ -22,7 +23,7 @@ func runNightly(opts Options) {
 		return
 	}
 	for _, r := range roots {
-		rep, err := reconcile.Series(opts.Vault, r)
+		rep, err := reconcile.Series(opts.Vault, r, func() ([]*model.Event, error) { return opts.Store.ListOccurrencesBySeriesID(r.ID) })
 		if err != nil {
 			log.Printf("serve: nightly reconcile %s: %v", r.Slug, err)
 			continue

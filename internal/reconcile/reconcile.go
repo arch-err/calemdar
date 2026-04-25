@@ -35,10 +35,27 @@ type Report struct {
 	Swept   int // orphan future events deleted
 }
 
+// ExistingLoader returns the set of currently-materialised occurrences
+// for r. Two implementations exist:
+//   - file-walk: series.LoadEventsForSeries — always-correct, no
+//     dependency, but allocates a 1MB scratch buffer per file (the
+//     historical 1.1GB-peak culprit during 260-event fanouts).
+//   - store-backed: store.ListOccurrencesBySeriesID — cheap SQL hit
+//     against the projection. Daemon path uses this whenever the store
+//     handle is in scope.
+//
+// Pass nil to fall back to the file-walk loader (the safe default when
+// no store handle is available, e.g. during a one-shot CLI invocation
+// against a cold cache).
+type ExistingLoader func() ([]*model.Event, error)
+
 // Series reconciles r against disk. Window: [max(start-date, today - 0),
 // today + HorizonMonths]. Past events (date < today) are backfilled on
 // first-create only — never rewritten or un-archived.
-func Series(v *vault.Vault, r *model.Root) (*Report, error) {
+//
+// existing supplies the current set of expanded occurrences (see the
+// ExistingLoader docs). nil falls back to a filesystem walk.
+func Series(v *vault.Vault, r *model.Root, existing ExistingLoader) (*Report, error) {
 	loc := model.Location()
 	today := model.Today(loc)
 	end := today.AddDate(0, config.Active.HorizonMonths, 0)
@@ -60,7 +77,12 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 	// Index existing occurrences by date. Uses series-id (not filename) so a
 	// renamed file still counts as "that date's slot is filled" — prevents
 	// duplicates when a user renames an expanded event in the UI.
-	existingForSeries, err := series.LoadEventsForSeries(v, r)
+	var existingForSeries []*model.Event
+	if existing != nil {
+		existingForSeries, err = existing()
+	} else {
+		existingForSeries, err = series.LoadEventsForSeries(v, r)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +147,11 @@ func Series(v *vault.Vault, r *model.Root) (*Report, error) {
 			continue
 		}
 		if err := os.Remove(ex.Path); err != nil {
+			if os.IsNotExist(err) {
+				// Store row pointed to a path the disk no longer has —
+				// fine, the desired state (gone) is already true.
+				continue
+			}
 			return rep, fmt.Errorf("sweep %s: %w", ex.Path, err)
 		}
 		writer.NotifySelf(ex.Path)

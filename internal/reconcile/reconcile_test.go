@@ -69,7 +69,7 @@ func TestFreshSeriesBackfillsAndCreatesForward(t *testing.T) {
 	v := setup(t)
 	r := baseRoot()
 
-	rep, err := Series(v, r)
+	rep, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -102,7 +102,7 @@ func TestPreservesUserOwned(t *testing.T) {
 		Body:      "hand-crafted",
 	}, "health")
 
-	_, err := Series(v, r)
+	_, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestPastEventsNotRewritten(t *testing.T) {
 		Body:      "done & done",
 	}, "health")
 
-	_, err := Series(v, r)
+	_, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -161,7 +161,7 @@ func TestArchivedPastNotRecreated(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := Series(v, r)
+	_, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -177,7 +177,7 @@ func TestRenamedEventNoDuplicate(t *testing.T) {
 	r := baseRoot()
 
 	// First pass: full population.
-	if _, err := Series(v, r); err != nil {
+	if _, err := Series(v, r, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -197,7 +197,7 @@ func TestRenamedEventNoDuplicate(t *testing.T) {
 	}
 
 	// Second reconcile — should NOT create a duplicate at origPath.
-	if _, err := Series(v, r); err != nil {
+	if _, err := Series(v, r, nil); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(origPath); err == nil {
@@ -226,7 +226,7 @@ func TestOrphanSweepFutureNonUserOwned(t *testing.T) {
 		UserOwned: false,
 	}, "health")
 
-	rep, err := Series(v, r)
+	rep, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -251,7 +251,7 @@ func TestOrphanSweepSkipsUserOwned(t *testing.T) {
 		UserOwned: true, // should NOT be swept
 	}, "health")
 
-	rep, err := Series(v, r)
+	rep, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +276,7 @@ func TestOrphanSweepSkipsPast(t *testing.T) {
 		UserOwned: false,
 	}, "health")
 
-	rep, err := Series(v, r)
+	rep, err := Series(v, r, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -301,7 +301,7 @@ func TestUpdatesNonUserOwnedFuture(t *testing.T) {
 		UserOwned: false,
 	}, "health")
 
-	if _, err := Series(v, r); err != nil {
+	if _, err := Series(v, r, nil); err != nil {
 		t.Fatal(err)
 	}
 	e, err := model.ParseEvent(v.EventPath("health", future, r.Slug))
@@ -319,7 +319,7 @@ func TestUntilHonored(t *testing.T) {
 	r.StartDate = dateStr(-2)
 	r.Until = dateStr(3)
 
-	if _, err := Series(v, r); err != nil {
+	if _, err := Series(v, r, nil); err != nil {
 		t.Fatal(err)
 	}
 	// Should have events for dates -2, -1, 0, 1, 2, 3 = 6 events.
