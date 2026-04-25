@@ -240,8 +240,22 @@ func (r *Runner) Run(ctx context.Context, name string, env map[string]string) er
 	return nil
 }
 
-// curateEnv builds the child env. PATH is fixed-defaulted; HOME comes
-// from the parent (so ~/-relative paths in the action still work).
+// curateEnv builds the child env. PATH is fixed-defaulted; HOME and
+// USER come from the parent. A small allowlist of desktop-session vars
+// is also passed through so GUI-launching actions
+// (gtk-launch / xdg-open / notify-send) can find DBus, the wayland
+// socket, and the runtime dir. We do NOT inherit the rest of the
+// daemon env — that keeps API tokens and similar out of subprocesses.
+var desktopPassthrough = []string{
+	"DBUS_SESSION_BUS_ADDRESS",
+	"DISPLAY",
+	"WAYLAND_DISPLAY",
+	"XDG_RUNTIME_DIR",
+	"XDG_SESSION_TYPE",
+	"XDG_CURRENT_DESKTOP",
+	"XAUTHORITY",
+}
+
 func curateEnv(extra map[string]string) []string {
 	env := []string{
 		"PATH=/usr/local/bin:/usr/bin:/bin",
@@ -251,6 +265,11 @@ func curateEnv(extra map[string]string) []string {
 	}
 	if user := os.Getenv("USER"); user != "" {
 		env = append(env, "USER="+user)
+	}
+	for _, k := range desktopPassthrough {
+		if v := os.Getenv(k); v != "" {
+			env = append(env, k+"="+v)
+		}
 	}
 	for k, v := range extra {
 		env = append(env, k+"="+v)

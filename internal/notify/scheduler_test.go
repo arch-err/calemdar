@@ -163,6 +163,49 @@ func TestSchedulerHandlesMultipleNotifyRules(t *testing.T) {
 	}
 }
 
+// 0-lead rule whose start time falls between two ticks must still
+// surface — before this test was added, the lookahead window started
+// at `now` and a 0-lead start that drifted past `now` between the
+// query and the fire check got filtered out by ListUpcomingWithNotify.
+func TestSchedulerFiresZeroLeadEventThatStartedInLastTickWindow(t *testing.T) {
+	Reset()
+	stub := &stubBackend{name: "stub"}
+	Register(stub)
+
+	s := openStore(t)
+	loc := model.Location()
+
+	// Event start = 15:19:00. Tick at 15:19:32 with last_tick = 15:18:32
+	// → fire-at (15:19:00 - 0) is in (15:18:32, 15:19:32], should fire.
+	startsAt := time.Date(2026, 5, 4, 15, 19, 0, 0, loc)
+	evt := &model.Event{
+		Path:      "/v/events/work/2026-05-04-smoke.md",
+		Title:     "smoke",
+		Date:      "2026-05-04",
+		StartTime: "15:19",
+		Notify:    []model.NotifyEntry{{Lead: "0", Via: []string{"stub"}}},
+	}
+	if err := s.UpsertOccurrence(evt, "work"); err != nil {
+		t.Fatal(err)
+	}
+
+	sc := NewScheduler(s, nil, SchedulerConfig{
+		TickInterval:        time.Minute,
+		MaxLead:             time.Hour,
+		MaxConcurrentSpawns: 1,
+	})
+	sc.lastTick = startsAt.Add(-32 * time.Second).Add(-time.Minute) // 15:18:32 - 1m drift
+	tickAt := startsAt.Add(32 * time.Second)                        // 15:19:32
+
+	sc.tick(context.Background(), tickAt)
+
+	stub.mu.Lock()
+	defer stub.mu.Unlock()
+	if len(stub.got) != 1 {
+		t.Fatalf("expected 1 fire, got %d", len(stub.got))
+	}
+}
+
 func TestFormatBodyZeroLead(t *testing.T) {
 	e := &model.Event{Title: "Ping", StartTime: "10:00", EndTime: "10:30"}
 	got := formatBody(e, "0")

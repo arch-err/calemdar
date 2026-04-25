@@ -116,10 +116,17 @@ func (sc *Scheduler) tick(ctx context.Context, now time.Time) {
 	last := sc.lastTick
 	sc.mu.Unlock()
 
-	// Lookahead window: events whose start lands in [now, now+maxLead].
-	// MaxLead is capped at validation time, so this is practically today
-	// (+ a touch of tomorrow if the user is using long leads).
-	rows, err := sc.store.ListUpcomingWithNotify(now, now.Add(sc.cfg.MaxLead), sc.cfg.Calendars)
+	// Lookahead window: events whose start lands in [last, now+maxLead].
+	// We include the (last, now] portion of the past so a 0-lead rule
+	// whose fire-at IS the start time still surfaces — without this,
+	// the start has already drifted into "the past" relative to `now`
+	// by the time we tick, and the event is filtered out before we
+	// ever reach the per-rule fire check.
+	queryFrom := last
+	if queryFrom.After(now) {
+		queryFrom = now
+	}
+	rows, err := sc.store.ListUpcomingWithNotify(queryFrom, now.Add(sc.cfg.MaxLead), sc.cfg.Calendars)
 	if err != nil {
 		log.Printf("notify: list upcoming: %v", err)
 		return
